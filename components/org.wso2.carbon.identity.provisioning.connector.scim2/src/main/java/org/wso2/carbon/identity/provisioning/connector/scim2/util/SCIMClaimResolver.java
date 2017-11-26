@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.wso2.charon3.core.objects.SCIMObject;
 import org.wso2.charon3.core.objects.User;
 import org.wso2.charon3.core.schema.*;
 import org.wso2.charon3.core.utils.AttributeUtil;
+import org.wso2.scim2.util.SCIM2CommonConstants;
 
 import java.util.*;
 
@@ -213,11 +214,11 @@ public class SCIMClaimResolver {
             throws CharonException, NotFoundException, BadRequestException {
         SCIMObject scimObject = null;
         switch (scimObjectType) {
-            case SCIMProvisioningConnectorConstants.GROUP:
+            case SCIM2CommonConstants.GROUP:
                 scimObject = new Group();
                 log.debug("Building Group Object");
                 break;
-            case SCIMProvisioningConnectorConstants.USER:
+            case SCIM2CommonConstants.USER:
                 scimObject = new User();
                 log.debug("Building User Object");
                 break;
