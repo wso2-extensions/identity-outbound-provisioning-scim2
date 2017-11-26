@@ -25,10 +25,17 @@ import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.provisioning.*;
 import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIMClaimResolver;
 import org.wso2.carbon.user.core.UserStoreException;
+import org.wso2.charon3.core.attributes.ComplexAttribute;
+import org.wso2.charon3.core.attributes.DefaultAttributeFactory;
+import org.wso2.charon3.core.attributes.MultiValuedAttribute;
+import org.wso2.charon3.core.attributes.SimpleAttribute;
+import org.wso2.charon3.core.exceptions.AbstractCharonException;
+import org.wso2.charon3.core.exceptions.BadRequestException;
 import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.objects.Group;
 import org.wso2.charon3.core.objects.User;
 import org.wso2.charon3.core.schema.SCIMConstants;
+import org.wso2.charon3.core.schema.SCIMSchemaDefinitions;
 import org.wso2.scim2.client.ProvisioningClient;
 import org.wso2.scim2.client.SCIMProvider;
 import org.wso2.scim2.util.SCIM2CommonConstants;
@@ -173,7 +180,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             User user = new User();
             user.setUserName(userName);
             ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, user,
-                  null);
+                    null);
             scimProvsioningClient.provisionDeleteUser();
 
         } catch (Exception e) {
@@ -244,7 +251,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
             List<String> userList = getUserNames(groupEntity.getAttributes());
 
-            setGroupMembers(group, userList);
+            this.setGroupMembers(group, userList);
 
             ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, group,
                     null);
@@ -301,7 +308,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
             List<String> userList = getUserNames(groupEntity.getAttributes());
 
-            setGroupMembers(group, userList);
+            this.setGroupMembers(group, userList);
 
             String oldGroupName = ProvisioningUtil.getAttributeValue(groupEntity,
                     IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI);
@@ -344,23 +351,64 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
         return SCIMProvisioningConnectorConstants.DEFAULT_SCIM_DIALECT;
     }
 
-    private void setUserPassword(User user, ProvisioningEntity userEntity) throws CharonException {
+    private void setUserPassword(User user, ProvisioningEntity userEntity) throws CharonException, BadRequestException {
         if ("true".equals(scimProvider.getProperty(SCIMProvisioningConnectorConstants.SCIM_ENABLE_PASSWORD_PROVISIONING))) {
-            user.setPassword(getPassword(userEntity.getAttributes()));
+            this.setPassword(user, getPassword(userEntity.getAttributes()));
         } else if (StringUtils.isNotBlank(scimProvider.getProperty(SCIMProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD))) {
-            user.setPassword(scimProvider.getProperty(SCIMProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD));
+           this.setPassword(user, scimProvider.getProperty(SCIMProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD));
         }
     }
 
-    public void setGroupMembers(Group group, List<String> userList) {
+    private void setGroupMembers(Group group, List<String> userList) throws AbstractCharonException {
 
         if (CollectionUtils.isNotEmpty(userList)) {
             for (Iterator<String> iterator = userList.iterator(); iterator.hasNext(); ) {
                 String userName = iterator.next();
-                Map<String, Object> members = new HashMap<>();
-                members.put(SCIMConstants.CommonSchemaConstants.DISPLAY, userName);
-                group.setMember(members);
+                this.setMember(group, userName);
             }
+        }
+    }
+
+    private void setMember(Group group, String userName) throws BadRequestException, CharonException {
+
+        if (group.isAttributeExist(SCIMConstants.GroupSchemaConstants.MEMBERS)) {
+            MultiValuedAttribute members = (MultiValuedAttribute) group.getAttributeList().get(
+                    SCIMConstants.GroupSchemaConstants.MEMBERS);
+            ComplexAttribute complexAttribute = setMemberCommon(userName);
+            members.setAttributeValue(complexAttribute);
+        } else {
+            MultiValuedAttribute members = new MultiValuedAttribute(SCIMConstants.GroupSchemaConstants.MEMBERS);
+            DefaultAttributeFactory.createAttribute(SCIMSchemaDefinitions.SCIMGroupSchemaDefinition.MEMBERS, members);
+            ComplexAttribute complexAttribute = setMemberCommon(userName);
+            members.setAttributeValue(complexAttribute);
+            group.setAttribute(members);
+        }
+    }
+
+    private ComplexAttribute setMemberCommon(String userName)
+            throws BadRequestException, CharonException {
+        ComplexAttribute complexAttribute = new ComplexAttribute();
+
+        SimpleAttribute displaySimpleAttribute = new SimpleAttribute(
+                SCIMConstants.GroupSchemaConstants.DISPLAY, userName);
+        DefaultAttributeFactory.createAttribute(
+                SCIMSchemaDefinitions.SCIMGroupSchemaDefinition.DISPLAY, displaySimpleAttribute);
+
+        complexAttribute.setSubAttribute(displaySimpleAttribute);
+        DefaultAttributeFactory.createAttribute(
+                SCIMSchemaDefinitions.SCIMGroupSchemaDefinition.MEMBERS, complexAttribute);
+        return  complexAttribute;
+    }
+
+    private void setPassword(User user, String password) throws CharonException, BadRequestException {
+
+        if (user.isAttributeExist(SCIMConstants.UserSchemaConstants.PASSWORD)) {
+            ((SimpleAttribute) user.getAttributeList().get(SCIMConstants.UserSchemaConstants.PASSWORD)).updateValue(password);
+        } else {
+            SimpleAttribute simpleAttribute = new SimpleAttribute(SCIMConstants.UserSchemaConstants.PASSWORD, password);
+            simpleAttribute = (SimpleAttribute) DefaultAttributeFactory.
+                    createAttribute(SCIMSchemaDefinitions.SCIMUserSchemaDefinition.PASSWORD, simpleAttribute);
+            user.getAttributeList().put(SCIMConstants.UserSchemaConstants.PASSWORD, simpleAttribute);
         }
     }
 
