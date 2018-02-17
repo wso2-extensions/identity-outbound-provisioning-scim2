@@ -54,6 +54,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
     @Override
     public void init(Property[] provisioningProperties) throws IdentityProvisioningException {
+
         scimProvider = new SCIMProvider();
 
         if (provisioningProperties != null && provisioningProperties.length > 0) {
@@ -238,6 +239,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
      * @throws IdentityProvisioningException
      */
     private String createGroup(ProvisioningEntity groupEntity) throws IdentityProvisioningException {
+
         try {
             List<String> groupNames = getGroupNames(groupEntity.getAttributes());
             String groupName = null;
@@ -268,6 +270,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
      * @throws IdentityProvisioningException
      */
     private void deleteGroup(ProvisioningEntity groupEntity) throws IdentityProvisioningException {
+
         try {
 
             List<String> groupNames = getGroupNames(groupEntity.getAttributes());
@@ -294,6 +297,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
      * @throws IdentityProvisioningException
      */
     private void updateGroup(ProvisioningEntity groupEntity) throws IdentityProvisioningException {
+
         try {
 
             List<String> groupNames = getGroupNames(groupEntity.getAttributes());
@@ -348,10 +352,12 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
     @Override
     public String getClaimDialectUri() throws IdentityProvisioningException {
+
         return SCIMProvisioningConnectorConstants.DEFAULT_SCIM_DIALECT;
     }
 
     private void setUserPassword(User user, ProvisioningEntity userEntity) throws CharonException, BadRequestException {
+
         if ("true".equals(scimProvider.getProperty(SCIMProvisioningConnectorConstants.SCIM_ENABLE_PASSWORD_PROVISIONING))) {
             this.setPassword(user, getPassword(userEntity.getAttributes()));
         } else if (StringUtils.isNotBlank(scimProvider.getProperty(SCIMProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD))) {
@@ -387,6 +393,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
     private ComplexAttribute setMemberCommon(String userName)
             throws BadRequestException, CharonException {
+
         ComplexAttribute complexAttribute = new ComplexAttribute();
 
         SimpleAttribute displaySimpleAttribute = new SimpleAttribute(

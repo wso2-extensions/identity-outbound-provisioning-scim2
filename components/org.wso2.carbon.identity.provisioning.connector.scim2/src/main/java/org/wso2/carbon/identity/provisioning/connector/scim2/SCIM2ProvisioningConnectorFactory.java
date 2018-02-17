@@ -24,7 +24,7 @@ import org.wso2.carbon.identity.provisioning.IdentityProvisioningException;
 
 public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConnectorFactory {
 
-    public static final String SCIM2 = "scim 2.0";
+    public static final String SCIM2 = "scim2";
     private static final Log log = LogFactory.getLog(SCIM2ProvisioningConnectorFactory.class);
 
     @Override
@@ -33,6 +33,7 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
      */
     protected SCIM2ProvisioningConnector buildConnector(Property[] provisioningProperties)
             throws IdentityProvisioningException {
+
         SCIM2ProvisioningConnector scimProvisioningConnector = new SCIM2ProvisioningConnector();
         scimProvisioningConnector.init(provisioningProperties);
 
