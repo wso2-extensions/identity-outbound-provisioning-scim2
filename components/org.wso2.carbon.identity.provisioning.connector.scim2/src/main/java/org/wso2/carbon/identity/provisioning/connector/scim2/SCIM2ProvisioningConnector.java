@@ -104,9 +104,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                     deleteUser(provisioningEntity);
                 }  else if (provisioningEntity.getOperation() == ProvisioningOperation.PUT) {
                     updateUser(provisioningEntity, ProvisioningOperation.PUT);
-                } else if (provisioningEntity.getOperation() == ProvisioningOperation.PATCH) {
-                    updateUser(provisioningEntity, ProvisioningOperation.PATCH);
-                } else {
+                }  else {
                     log.warn("Unsupported provisioning operation.");
                 }
             } else if (provisioningEntity.getEntityType() == ProvisioningEntityType.GROUP) {
@@ -116,9 +114,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                     createGroup(provisioningEntity);
                 } else if (provisioningEntity.getOperation() == ProvisioningOperation.PUT) {
                     updateGroup(provisioningEntity);
-                } else if (provisioningEntity.getOperation() == ProvisioningOperation.PATCH) {
-                    updateGroup(provisioningEntity);
-                }else {
+                } else {
                     log.warn("Unsupported provisioning operation.");
                 }
             } else {
@@ -225,9 +221,8 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                     null);
             if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
                 scimProvisioningClient.provisionUpdateUser();
-            } else if (ProvisioningOperation.PATCH.equals(provisioningOperation)) {
-                //scimProvisioningClient.provisionPatchUser();
             }
+
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while creating the user", e);
         }
