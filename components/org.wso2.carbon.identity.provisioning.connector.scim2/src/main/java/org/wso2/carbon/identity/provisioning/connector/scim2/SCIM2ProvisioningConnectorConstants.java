@@ -35,4 +35,6 @@ public class SCIM2ProvisioningConnectorConstants {
     public static final String SCIM_DEFAULT_PASSWORD = "scim-default-pwd";
 
     public static final String DEFAULT = "default";
+    public static final String ATTRIBUTE_TYPE = ".type";
+    public static final String ATTRIBUTE_VALUE = ".value";
 }

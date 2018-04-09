@@ -34,12 +34,17 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
     public static final String SCIM2 = "SCIM2";
     private static final Log log = LogFactory.getLog(SCIM2ProvisioningConnectorFactory.class);
 
-    @Override
     /**
+     * Initializes the SCIM2 provisioning connector.
+     *
+     * @param provisioningProperties
+     * @return AbstractOutboundProvisioningConnector
      * @throws IdentityProvisioningException
      */
+    @Override
     protected AbstractOutboundProvisioningConnector buildConnector(Property[] provisioningProperties)
             throws IdentityProvisioningException {
+
         SCIM2ProvisioningConnector scimProvisioningConnector = new SCIM2ProvisioningConnector();
         scimProvisioningConnector.init(provisioningProperties);
 
@@ -48,12 +53,22 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         }
         return scimProvisioningConnector;
     }
-    
+
+    /**
+     * Returns the connectorType.
+     *
+     * @return connectorType
+     */
     @Override
     public String getConnectorType() {
         return SCIM2;
     }
 
+    /**
+     * Populates the configuration properties.
+     *
+     * @return property list
+     */
     @Override
     public List<Property> getConfigurationProperties() {
 

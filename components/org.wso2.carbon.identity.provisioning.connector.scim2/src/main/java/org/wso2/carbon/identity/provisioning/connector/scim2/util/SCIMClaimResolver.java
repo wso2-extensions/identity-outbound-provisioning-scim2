@@ -63,6 +63,7 @@ public class SCIMClaimResolver {
      * @return
      */
     public static Map<String, String> getClaimsMap(AbstractSCIMObject scimObject) throws CharonException {
+
         Map<String, String> claimsMap = new HashMap<>();
         Map<String, Attribute> attributeList = scimObject.getAttributeList();
         for (Map.Entry<String, Attribute> attributeEntry : attributeList.entrySet()) {
@@ -104,13 +105,14 @@ public class SCIMClaimResolver {
     }
 
     /*
-     * set claim mapping for simple attribute
+     * Set claim mapping for simple attribute.
      *
      * @param attribute
      * @param claimsMap
      */
     private static void setClaimsForSimpleAttribute(Attribute attribute, Map<String, String> claimsMap) throws
             CharonException {
+
         String attributeURI = attribute.getURI();
         if (((SimpleAttribute) attribute).getValue() != null) {
             String attributeValue = AttributeUtil.getStringValueOfAttribute(
@@ -121,13 +123,14 @@ public class SCIMClaimResolver {
     }
 
     /*
-     * set claim mapping for multivalued attribute
+     * Set claim mapping for multivalued attribute.
      *
      * @param attribute
      * @param claimsMap
      */
     private static void setClaimsForMultivaluedAttribute(Attribute attribute, Map<String, String> claimsMap) throws
             CharonException {
+
         MultiValuedAttribute multiValAttribute = (MultiValuedAttribute) attribute;
         // get the URI of root attribute
         String attributeURI = multiValAttribute.getURI();
@@ -144,7 +147,6 @@ public class SCIMClaimResolver {
             }
             claimsMap.put(attributeURI, values);
         }
-
         // check if values are set as complex values
         // NOTE: in carbon, we only support storing of type and
         // value of a multi-valued attribute
@@ -179,7 +181,7 @@ public class SCIMClaimResolver {
     }
 
     /*
-     * set claim mapping for complex attribute
+     * Set claim mapping for complex attribute.
      *
      * @param entry
      * @param claimsMap
@@ -211,9 +213,9 @@ public class SCIMClaimResolver {
      * @param scimObjectType
      * @return
      */
-    public static SCIMObject constructSCIMObjectFromAttributes(Map<String, String> attributes,
-                                                               int scimObjectType)
+    public static SCIMObject constructSCIMObjectFromAttributes(Map<String, String> attributes, int scimObjectType)
             throws CharonException, NotFoundException, BadRequestException {
+
         SCIMObject scimObject = null;
         switch (scimObjectType) {
             case SCIM2CommonConstants.GROUP:
@@ -231,6 +233,7 @@ public class SCIMClaimResolver {
             default:
                 break;
         }
+
         for (Map.Entry<String, String> attributeEntry : attributes.entrySet()) {
             if (debug) {
                 log.info("AttributeKey: " + attributeEntry.getKey() + " AttributeValue:" +
@@ -273,7 +276,7 @@ public class SCIMClaimResolver {
     }
 
     /*
-     * construct the level one attributes like nickName
+     * Construct the level one attributes like nickName.
      *
      * @param attributeEntry
      * @param scimObject
@@ -286,6 +289,7 @@ public class SCIMClaimResolver {
                                                                    SCIMObject scimObject, String[] attributeNames,
                                                                    int scimObjectType)
             throws BadRequestException, CharonException {
+
         //get attribute schema
         AttributeSchema attributeSchema = getAttributeSchema(attributeEntry.getKey(), scimObjectType);
         if (attributeSchema != null) {
@@ -315,7 +319,7 @@ public class SCIMClaimResolver {
     }
 
     /*
-     * construct the level two attributes like emails.value
+     * Construct the level two attributes like emails.
      *
      * @param attributeEntry
      * @param scimObject
@@ -329,6 +333,7 @@ public class SCIMClaimResolver {
                                                                    SCIMObject scimObject, String[] attributeNames,
                                                                    int scimObjectType)
             throws BadRequestException, CharonException, NotFoundException {
+
         //get parent attribute name
         String parentAttributeName = attributeNames[0];
         //get parent attribute schema
@@ -346,7 +351,7 @@ public class SCIMClaimResolver {
                 valueAttributeURI = valueAttributeURI + ".formatted";
                 valueSubAttributeSchema = getAttributeSchema(valueAttributeURI, scimObjectType);
             } else {
-                valueAttributeURI = valueAttributeURI + ".value";
+                valueAttributeURI = valueAttributeURI + SCIM2ProvisioningConnectorConstants.ATTRIBUTE_VALUE;
                 valueSubAttributeSchema = getAttributeSchema(valueAttributeURI, scimObjectType);
             }
             //create map with complex value
@@ -354,7 +359,7 @@ public class SCIMClaimResolver {
                     attributeNames[1]);
 
             String typeAttributeURI = attributeEntry.getKey().replace("." + attributeNames[1], "");
-            typeAttributeURI = typeAttributeURI + ".type";
+            typeAttributeURI = typeAttributeURI + SCIM2ProvisioningConnectorConstants.ATTRIBUTE_TYPE;
             AttributeSchema typeAttributeSchema = getAttributeSchema(typeAttributeURI, scimObjectType);
             DefaultAttributeFactory.createAttribute(typeAttributeSchema, typeSimpleAttribute);
             SimpleAttribute valueSimpleAttribute = new SimpleAttribute(SCIMConstants.CommonSchemaConstants.VALUE,
@@ -415,7 +420,7 @@ public class SCIMClaimResolver {
     }
 
     /*
-     * construct the level three extension attributes like extensionSchema.manager.id
+     * Construct the level three extension attributes like extensionSchema.manager.id
      *
      * @param attributeEntry
      * @param scimObject
@@ -428,6 +433,7 @@ public class SCIMClaimResolver {
                                                                      SCIMObject scimObject, String[] attributeNames,
                                                                      int scimObjectType) throws BadRequestException,
             CharonException {
+
         String parentAttribute = attributeNames[0];
         //get immediate parent attribute name
         String immediateParentAttributeName = attributeNames[1];
@@ -439,11 +445,11 @@ public class SCIMClaimResolver {
         if (subAttributeSchema.getMultiValued()) {
             SimpleAttribute typeSimpleAttribute = new SimpleAttribute(SCIMConstants.CommonSchemaConstants.TYPE,
                     attributeNames[2]);
-            AttributeSchema typeAttributeSchema = getAttributeSchema(subAttributeSchema.getURI() + ".type",
-                    scimObjectType);
+            AttributeSchema typeAttributeSchema = getAttributeSchema(subAttributeSchema.getURI() +
+                            SCIM2ProvisioningConnectorConstants.ATTRIBUTE_TYPE, scimObjectType);
             DefaultAttributeFactory.createAttribute(typeAttributeSchema, typeSimpleAttribute);
-            AttributeSchema valueAttributeSchema = getAttributeSchema(subAttributeSchema.getURI() + ".value",
-                    scimObjectType);
+            AttributeSchema valueAttributeSchema = getAttributeSchema(subAttributeSchema.getURI() +
+                            SCIM2ProvisioningConnectorConstants.ATTRIBUTE_VALUE, scimObjectType);
             SimpleAttribute valueSimpleAttribute = new SimpleAttribute(SCIMConstants.CommonSchemaConstants.VALUE,
                     AttributeUtil.getAttributeValueFromString(attributeEntry.getValue(), valueAttributeSchema.getType
                             ()));
@@ -533,13 +539,14 @@ public class SCIMClaimResolver {
     }
 
     /*
-     * return the attribute schema for the asked attribute URI.
+     * Return the attribute schema for the asked attribute URI.
      *
      * @param attributeURI
      * @param scimObjectType
      * @return
      */
     private static AttributeSchema getAttributeSchema(String attributeURI, int scimObjectType) {
+
         ResourceTypeSchema resourceSchema = getResourceSchema(scimObjectType);
         if (resourceSchema != null) {
             List<AttributeSchema> attributeSchemas = resourceSchema.getAttributesList();
@@ -580,12 +587,13 @@ public class SCIMClaimResolver {
     }
 
     /*
-     * return the corresponding resource type schema.
+     * Return the corresponding resource type schema.
      *
      * @param scimObjectType
      * @return
      */
     private static ResourceTypeSchema getResourceSchema(int scimObjectType) {
+
         ResourceTypeSchema resourceSchema = null;
         switch (scimObjectType) {
             case 1:
