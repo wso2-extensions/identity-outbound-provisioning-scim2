@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,13 @@
 
 package org.wso2.carbon.identity.provisioning.connector.scim2;
 
-public class SCIMProvisioningConnectorConstants {
+/**
+ * This class contains the constants related to SCIM2.
+ */
+public class SCIM2ProvisioningConnectorConstants {
 
-    private SCIMProvisioningConnectorConstants(){}
+    private SCIM2ProvisioningConnectorConstants() {
+    }
 
     public static final String SCIM_USER_EP = "scim-user-ep";
     public static final String SCIM_GROUP_EP = "scim-group-ep";
@@ -31,5 +35,4 @@ public class SCIMProvisioningConnectorConstants {
     public static final String SCIM_DEFAULT_PASSWORD = "scim-default-pwd";
 
     public static final String DEFAULT = "default";
-
 }

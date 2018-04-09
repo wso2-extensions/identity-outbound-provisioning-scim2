@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+  ~ Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -15,24 +15,24 @@
   ~ limitations under the License.
   -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<parent>
 		<groupId>org.wso2.carbon.identity.outbound.provisioning.scim2</groupId>
 		<artifactId>identity-outbound-provisioning-scim2</artifactId>
 		<relativePath>../../pom.xml</relativePath>
-		<version>1.0.0</version>
+		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>org.wso2.carbon.identity.provisioning.connector.scim2</artifactId>
 	<name>WSO2 Carbon - SCIM 2.0 - Provisioning Component</name>
-	<packaging>jar</packaging>
+	<packaging>bundle</packaging>
 
 	<dependencies>
 		<dependency>
-			<groupId>org.wso2.identity.client</groupId>
-			<artifactId>org.wso2.identity.client.scim2</artifactId>
+			<groupId>org.wso2.carbon.extension.identity.scim2</groupId>
+			<artifactId>org.wso2.carbon.extension.identity.scim2.client</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>commons-lang.wso2</groupId>
@@ -84,7 +84,53 @@
 					<target>1.7</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-scr-plugin</artifactId>
+				<version>1.7.2</version>
+				<executions>
+					<execution>
+						<id>generate-scr-scrdescriptor</id>
+						<goals>
+							<goal>scr</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+						<Bundle-Name>${project.artifactId}</Bundle-Name>
+						<Private-Package>
+							org.wso2.carbon.identity.provisioning.connector.scim2.internal
+						</Private-Package>
+						<Import-Package>
+							org.apache.commons.logging; version="${commons-logging.osgi.version.range}",
+							org.apache.commons.collections; version="${commons-collections.wso2.osgi.version.range}",
+							org.apache.commons.lang; version="${commons-lang.wso2.osgi.version.range}",
+							org.osgi.framework; version="${osgi.framework.imp.pkg.version.range}",
+							org.osgi.service.component; version="${osgi.service.component.imp.pkg.version.range}",
+							org.wso2.carbon.identity.application.common.model;
+							version="${carbon.identity.framework.import.version.range}",
+							org.wso2.carbon.identity.provisioning;
+							version="${carbon.identity.framework.import.version.range}",
+							org.wso2.charon3.core.*; version="${charon.wso2.version.identity}",
+							org.wso2.scim2.*;version="${identity.scim2.client.version}",
+							io.scim2.swagger.client.*;version="${identity.scim2.client.version}"
+						</Import-Package>
+						<Export-Package>
+							!org.wso2.carbon.identity.provisioning.connector.scim2.internal,
+							org.wso2.carbon.identity.provisioning.connector.scim2.*;
+							version="${identity.outbound.provisioning.scim2.export.version}"
+						</Export-Package>
+						<DynamicImport-Package>*</DynamicImport-Package>
+					</instructions>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
-
 </project>

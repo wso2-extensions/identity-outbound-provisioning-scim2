@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,14 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.application.common.model.Property;
-import org.wso2.carbon.identity.provisioning.*;
+import org.wso2.carbon.identity.provisioning.AbstractOutboundProvisioningConnector;
+import org.wso2.carbon.identity.provisioning.IdentityProvisioningConstants;
+import org.wso2.carbon.identity.provisioning.IdentityProvisioningException;
+import org.wso2.carbon.identity.provisioning.ProvisionedIdentifier;
+import org.wso2.carbon.identity.provisioning.ProvisioningEntity;
+import org.wso2.carbon.identity.provisioning.ProvisioningEntityType;
+import org.wso2.carbon.identity.provisioning.ProvisioningOperation;
+import org.wso2.carbon.identity.provisioning.ProvisioningUtil;
 import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIMClaimResolver;
 import org.wso2.carbon.user.core.UserStoreException;
 import org.wso2.charon3.core.attributes.ComplexAttribute;
@@ -45,6 +52,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This class handles the SCIM2 user and group operations.
+ */
 public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConnector {
 
     private static final long serialVersionUID = -2800777564581005554L;
@@ -54,28 +64,29 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
     @Override
     public void init(Property[] provisioningProperties) throws IdentityProvisioningException {
-
         scimProvider = new SCIMProvider();
 
         if (provisioningProperties != null && provisioningProperties.length > 0) {
 
             for (Property property : provisioningProperties) {
 
-                if (SCIMProvisioningConnectorConstants.SCIM_USER_EP.equals(property.getName())) {
+                if (SCIM2ProvisioningConnectorConstants.SCIM_USER_EP.equals(property.getName())) {
                     populateSCIMProvider(property, SCIM2CommonConstants.ELEMENT_NAME_USER_ENDPOINT);
-                } else if (SCIMProvisioningConnectorConstants.SCIM_GROUP_EP.equals(property.getName())) {
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM_GROUP_EP.equals(property.getName())) {
                     populateSCIMProvider(property, SCIM2CommonConstants.ELEMENT_NAME_GROUP_ENDPOINT);
-                } else if (SCIMProvisioningConnectorConstants.SCIM_USERNAME.equals(property.getName())) {
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM_USERNAME.equals(property.getName())) {
                     populateSCIMProvider(property, SCIMConstants.UserSchemaConstants.USER_NAME);
-                } else if (SCIMProvisioningConnectorConstants.SCIM_PASSWORD.equals(property.getName())) {
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM_PASSWORD.equals(property.getName())) {
                     populateSCIMProvider(property, SCIMConstants.UserSchemaConstants.PASSWORD);
-                } else if (SCIMProvisioningConnectorConstants.SCIM_USERSTORE_DOMAIN.equals(property.getName())) {
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM_USERSTORE_DOMAIN.equals(property.getName())) {
                     userStoreDomainName = property.getValue() != null ? property.getValue()
                             : property.getDefaultValue();
-                } else if (SCIMProvisioningConnectorConstants.SCIM_ENABLE_PASSWORD_PROVISIONING.equals(property.getName())) {
-                    populateSCIMProvider(property, SCIMProvisioningConnectorConstants.SCIM_ENABLE_PASSWORD_PROVISIONING);
-                } else if (SCIMProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD.equals(property.getName())) {
-                    populateSCIMProvider(property, SCIMProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD);
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM_ENABLE_PASSWORD_PROVISIONING.equals(property.
+                        getName())) {
+                    populateSCIMProvider(property, SCIM2ProvisioningConnectorConstants.
+                            SCIM_ENABLE_PASSWORD_PROVISIONING);
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD.equals(property.getName())) {
+                    populateSCIMProvider(property, SCIM2ProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD);
                 }
 
                 if (IdentityProvisioningConstants.JIT_PROVISIONING_ENABLED.equals(property
@@ -87,11 +98,9 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     }
 
     @Override
-    public ProvisionedIdentifier provision(ProvisioningEntity provisioningEntity)
-            throws IdentityProvisioningException {
+    public ProvisionedIdentifier provision(ProvisioningEntity provisioningEntity) throws IdentityProvisioningException {
 
         if (provisioningEntity != null) {
-
             if (provisioningEntity.isJitProvisioning() && !isJitProvisioningEnabled()) {
                 log.debug("JIT provisioning disabled for SCIM 2.0 connector");
                 return null;
@@ -100,11 +109,11 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             if (provisioningEntity.getEntityType() == ProvisioningEntityType.USER) {
                 if (provisioningEntity.getOperation() == ProvisioningOperation.POST) {
                     createUser(provisioningEntity);
-                } else if(provisioningEntity.getOperation() == ProvisioningOperation.DELETE) {
+                } else if (provisioningEntity.getOperation() == ProvisioningOperation.DELETE) {
                     deleteUser(provisioningEntity);
-                }  else if (provisioningEntity.getOperation() == ProvisioningOperation.PUT) {
+                } else if (provisioningEntity.getOperation() == ProvisioningOperation.PUT) {
                     updateUser(provisioningEntity, ProvisioningOperation.PUT);
-                }  else {
+                } else {
                     log.warn("Unsupported provisioning operation.");
                 }
             } else if (provisioningEntity.getEntityType() == ProvisioningEntityType.GROUP) {
@@ -121,46 +130,40 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                 log.warn("Unsupported provisioning entity.");
             }
         }
-
         return null;
-
     }
 
     /**
+     * Creates the user.
+     *
      * @param userEntity
      * @throws UserStoreException
      */
     private void createUser(ProvisioningEntity userEntity) throws IdentityProvisioningException {
 
         try {
-
             List<String> userNames = getUserNames(userEntity.getAttributes());
             String userName = null;
-
             if (CollectionUtils.isNotEmpty(userNames)) {
                 userName = userNames.get(0);
             }
-
             // get single-valued claims
             Map<String, String> singleValued = getSingleValuedClaims(userEntity.getAttributes());
-
             // if user created through management console, claim values are not present.
-            User user = (User) SCIMClaimResolver.constructSCIMObjectFromAttributes(singleValued,
-                    1);
-
+            User user = (User) SCIMClaimResolver.constructSCIMObjectFromAttributes(singleValued, 1);
             user.setUserName(userName);
             setUserPassword(user, userEntity);
 
-            ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, user,
-                    null);
+            ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, user, null);
             scimProvsioningClient.provisionCreateUser();
-
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while creating the user", e);
         }
     }
 
     /**
+     * Deletes the user.
+     *
      * @param userEntity
      * @throws IdentityProvisioningException
      */
@@ -169,23 +172,22 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
         try {
             List<String> userNames = getUserNames(userEntity.getAttributes());
             String userName = null;
-
             if (CollectionUtils.isNotEmpty(userNames)) {
                 userName = userNames.get(0);
             }
-
             User user = new User();
             user.setUserName(userName);
-            ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, user,
-                    null);
+            ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, user, null);
             scimProvsioningClient.provisionDeleteUser();
-
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while deleting user.", e);
         }
     }
 
     /**
+     *
+     * Updates the user.
+     *
      * @param userEntity
      * @throws IdentityProvisioningException
      */
@@ -193,19 +195,14 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             IdentityProvisioningException {
 
         try {
-
             List<String> userNames = getUserNames(userEntity.getAttributes());
             String userName = null;
-
             if (CollectionUtils.isNotEmpty(userNames)) {
                 userName = userNames.get(0);
             }
-
             User user;
-
             // get single-valued claims
             Map<String, String> singleValued = getSingleValuedClaims(userEntity.getAttributes());
-
             // if user created through management console, claim values are not present.
             if (MapUtils.isNotEmpty(singleValued)) {
                 user = (User) SCIMClaimResolver.constructSCIMObjectFromAttributes(singleValued,
@@ -213,28 +210,25 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             } else {
                 user = new User();
             }
-
             user.setUserName(userName);
             setUserPassword(user, userEntity);
-
-            ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, user,
-                    null);
+            ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, user, null);
             if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
                 scimProvisioningClient.provisionUpdateUser();
             }
-
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while creating the user", e);
         }
     }
 
     /**
+     * Creates the group.
+     *
      * @param groupEntity
      * @return
      * @throws IdentityProvisioningException
      */
     private String createGroup(ProvisioningEntity groupEntity) throws IdentityProvisioningException {
-
         try {
             List<String> groupNames = getGroupNames(groupEntity.getAttributes());
             String groupName = null;
@@ -242,35 +236,28 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             if (CollectionUtils.isNotEmpty(groupNames)) {
                 groupName = groupNames.get(0);
             }
-
             Group group = new Group();
             group.setDisplayName(groupName);
-
             List<String> userList = getUserNames(groupEntity.getAttributes());
-
             this.setGroupMembers(group, userList);
-
-            ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, group,
-                    null);
+            ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, group, null);
             scimProvsioningClient.provisionCreateGroup();
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while adding group.", e);
         }
-
         return null;
     }
 
     /**
+     * Deletes the group.
+     *
      * @param groupEntity
      * @throws IdentityProvisioningException
      */
     private void deleteGroup(ProvisioningEntity groupEntity) throws IdentityProvisioningException {
-
         try {
-
             List<String> groupNames = getGroupNames(groupEntity.getAttributes());
             String groupName = null;
-
             if (CollectionUtils.isNotEmpty(groupNames)) {
                 groupName = groupNames.get(0);
             }
@@ -278,40 +265,35 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             Group group = new Group();
             group.setDisplayName(groupName);
 
-            ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, group,
-                    null);
+            ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, group, null);
             scimProvsioningClient.provisionDeleteGroup();
-
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while deleting group.", e);
         }
     }
 
     /**
+     * Updates the group.
+     *
      * @param groupEntity
      * @throws IdentityProvisioningException
      */
     private void updateGroup(ProvisioningEntity groupEntity) throws IdentityProvisioningException {
 
         try {
-
             List<String> groupNames = getGroupNames(groupEntity.getAttributes());
             String groupName = null;
-
             if (CollectionUtils.isNotEmpty(groupNames)) {
                 groupName = groupNames.get(0);
             }
-
             Group group = new Group();
             group.setDisplayName(groupName);
-
             List<String> userList = getUserNames(groupEntity.getAttributes());
-
             this.setGroupMembers(group, userList);
 
             String oldGroupName = ProvisioningUtil.getAttributeValue(groupEntity,
                     IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI);
-            ProvisioningClient scimProvsioningClient = null;
+            ProvisioningClient scimProvsioningClient;
             if (StringUtils.isEmpty(oldGroupName)) {
                 scimProvsioningClient = new ProvisioningClient(scimProvider, group, null);
             } else {
@@ -322,8 +304,6 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             }
             if (ProvisioningOperation.PUT.equals(groupEntity.getOperation())) {
                 scimProvsioningClient.provisionUpdateGroup();
-            }else if(ProvisioningOperation.PATCH.equals(groupEntity.getOperation())){
-                //scimProvsioningClient.provisionPatchGroup();
             }
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while updating group.", e);
@@ -347,16 +327,16 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
     @Override
     public String getClaimDialectUri() throws IdentityProvisioningException {
-
-        return SCIMProvisioningConnectorConstants.DEFAULT_SCIM_DIALECT;
+        return SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM_DIALECT;
     }
 
     private void setUserPassword(User user, ProvisioningEntity userEntity) throws CharonException, BadRequestException {
-
-        if ("true".equals(scimProvider.getProperty(SCIMProvisioningConnectorConstants.SCIM_ENABLE_PASSWORD_PROVISIONING))) {
+        if ("true".equals(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
+                SCIM_ENABLE_PASSWORD_PROVISIONING))) {
             this.setPassword(user, getPassword(userEntity.getAttributes()));
-        } else if (StringUtils.isNotBlank(scimProvider.getProperty(SCIMProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD))) {
-           this.setPassword(user, scimProvider.getProperty(SCIMProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD));
+        } else if (StringUtils.isNotBlank(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
+                SCIM_DEFAULT_PASSWORD))) {
+            this.setPassword(user, scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD));
         }
     }
 
@@ -390,22 +370,21 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             throws BadRequestException, CharonException {
 
         ComplexAttribute complexAttribute = new ComplexAttribute();
-
-        SimpleAttribute displaySimpleAttribute = new SimpleAttribute(
-                SCIMConstants.GroupSchemaConstants.DISPLAY, userName);
-        DefaultAttributeFactory.createAttribute(
-                SCIMSchemaDefinitions.SCIMGroupSchemaDefinition.DISPLAY, displaySimpleAttribute);
-
+        SimpleAttribute displaySimpleAttribute = new SimpleAttribute(SCIMConstants.GroupSchemaConstants.DISPLAY,
+                userName);
+        DefaultAttributeFactory.createAttribute(SCIMSchemaDefinitions.SCIMGroupSchemaDefinition.DISPLAY,
+                displaySimpleAttribute);
         complexAttribute.setSubAttribute(displaySimpleAttribute);
-        DefaultAttributeFactory.createAttribute(
-                SCIMSchemaDefinitions.SCIMGroupSchemaDefinition.MEMBERS, complexAttribute);
-        return  complexAttribute;
+        DefaultAttributeFactory.createAttribute(SCIMSchemaDefinitions.SCIMGroupSchemaDefinition.MEMBERS,
+                complexAttribute);
+        return complexAttribute;
     }
 
     private void setPassword(User user, String password) throws CharonException, BadRequestException {
 
         if (user.isAttributeExist(SCIMConstants.UserSchemaConstants.PASSWORD)) {
-            ((SimpleAttribute) user.getAttributeList().get(SCIMConstants.UserSchemaConstants.PASSWORD)).updateValue(password);
+            ((SimpleAttribute) user.getAttributeList().get(SCIMConstants.UserSchemaConstants.PASSWORD)).
+                    updateValue(password);
         } else {
             SimpleAttribute simpleAttribute = new SimpleAttribute(SCIMConstants.UserSchemaConstants.PASSWORD, password);
             simpleAttribute = (SimpleAttribute) DefaultAttributeFactory.
@@ -418,5 +397,4 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     protected String getUserStoreDomainName() {
         return userStoreDomainName;
     }
-
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,16 @@
 
 package org.wso2.carbon.identity.provisioning.connector.scim2.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.wso2.carbon.identity.provisioning.connector.scim2.SCIMProvisioningConnectorConstants;
-import org.wso2.charon3.core.attributes.*;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningConnectorConstants;
+import org.wso2.charon3.core.attributes.Attribute;
+import org.wso2.charon3.core.attributes.ComplexAttribute;
+import org.wso2.charon3.core.attributes.MultiValuedAttribute;
+import org.wso2.charon3.core.attributes.SimpleAttribute;
+import org.wso2.charon3.core.attributes.DefaultAttributeFactory;
 import org.wso2.charon3.core.exceptions.BadRequestException;
 import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.exceptions.NotFoundException;
@@ -27,18 +33,27 @@ import org.wso2.charon3.core.objects.AbstractSCIMObject;
 import org.wso2.charon3.core.objects.Group;
 import org.wso2.charon3.core.objects.SCIMObject;
 import org.wso2.charon3.core.objects.User;
-import org.wso2.charon3.core.schema.*;
+import org.wso2.charon3.core.schema.AttributeSchema;
+import org.wso2.charon3.core.schema.SCIMConstants;
+import org.wso2.charon3.core.schema.SCIMResourceSchemaManager;
+import org.wso2.charon3.core.schema.SCIMSchemaDefinitions;
+import org.wso2.charon3.core.schema.ResourceTypeSchema;
+import org.wso2.charon3.core.schema.SCIMAttributeSchema;
+import org.wso2.charon3.core.schema.SCIMDefinitions;
 import org.wso2.charon3.core.utils.AttributeUtil;
 import org.wso2.scim2.util.SCIM2CommonConstants;
 
-import java.util.*;
-
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 /**
  * This class is responsible for converting SCIM attributes in a SCIM object to carbon claims and vice versa.
  */
 public class SCIMClaimResolver {
 
-    private static Logger log = LoggerFactory.getLogger(SCIMClaimResolver.class);
+    private static Log log = LogFactory.getLog(SCIMClaimResolver.class);
     private static final boolean debug = log.isDebugEnabled();
 
     /*
@@ -48,22 +63,16 @@ public class SCIMClaimResolver {
      * @return
      */
     public static Map<String, String> getClaimsMap(AbstractSCIMObject scimObject) throws CharonException {
-
         Map<String, String> claimsMap = new HashMap<>();
         Map<String, Attribute> attributeList = scimObject.getAttributeList();
         for (Map.Entry<String, Attribute> attributeEntry : attributeList.entrySet()) {
-            //we are treating group members and user groups attributes separately
-            if (attributeEntry.getKey().equals(SCIMConstants.GroupSchemaConstants.MEMBERS)) {
-                continue;
-            } else if (attributeEntry.getKey().equals(SCIMConstants.UserSchemaConstants.GROUPS)) {
+            Attribute attribute = attributeEntry.getValue();
+            // if the attribute is password, skip it
+            if (SCIMConstants.UserSchemaConstants.PASSWORD.equals(attribute.getName())) {
                 continue;
             }
-
-            Attribute attribute = attributeEntry.getValue();
-
             if (attribute instanceof SimpleAttribute) {
                 setClaimsForSimpleAttribute(attribute, claimsMap);
-
             } else if (attribute instanceof MultiValuedAttribute) {
                 setClaimsForMultivaluedAttribute(attribute, claimsMap);
             } else if (attribute instanceof ComplexAttribute) {
@@ -72,17 +81,13 @@ public class SCIMClaimResolver {
                 ComplexAttribute complexAttribute = (ComplexAttribute) attribute;
                 Map<String, Attribute> attributes = null;
                 if (complexAttribute.getSubAttributesList() != null &&
-                        !complexAttribute.getSubAttributesList().isEmpty()) {
+                        MapUtils.isNotEmpty(complexAttribute.getSubAttributesList())) {
                     attributes = complexAttribute.getSubAttributesList();
                 }
                 if (attributes != null) {
                     for (Attribute entry : attributes.values()) {
                         // if the attribute a simple attribute
                         if (entry instanceof SimpleAttribute) {
-                            //we treat meta location attribute separately.
-                            if (entry.getURI().equals(SCIMConstants.CommonSchemaConstants.LOCATION_URI)) {
-                                continue;
-                            }
                             setClaimsForSimpleAttribute(entry, claimsMap);
 
                         } else if (entry instanceof MultiValuedAttribute) {
@@ -106,7 +111,6 @@ public class SCIMClaimResolver {
      */
     private static void setClaimsForSimpleAttribute(Attribute attribute, Map<String, String> claimsMap) throws
             CharonException {
-
         String attributeURI = attribute.getURI();
         if (((SimpleAttribute) attribute).getValue() != null) {
             String attributeValue = AttributeUtil.getStringValueOfAttribute(
@@ -124,13 +128,12 @@ public class SCIMClaimResolver {
      */
     private static void setClaimsForMultivaluedAttribute(Attribute attribute, Map<String, String> claimsMap) throws
             CharonException {
-
         MultiValuedAttribute multiValAttribute = (MultiValuedAttribute) attribute;
         // get the URI of root attribute
         String attributeURI = multiValAttribute.getURI();
         // check if values are set as primitive values
         List<Object> attributeValues = multiValAttribute.getAttributePrimitiveValues();
-        if (attributeValues != null && !attributeValues.isEmpty()) {
+        if (CollectionUtils.isNotEmpty(attributeValues)) {
             String values = null;
             for (Object attributeValue : attributeValues) {
                 if (values != null) {
@@ -171,7 +174,6 @@ public class SCIMClaimResolver {
                 // put it in claims
                 claimsMap.put(valueAttriubuteURI,
                         AttributeUtil.getStringValueOfAttribute(valueAttribute.getValue(), valueAttribute.getType()));
-
             }
         }
     }
@@ -187,23 +189,20 @@ public class SCIMClaimResolver {
 
         // reading attributes list of the complex attribute
         ComplexAttribute entryOfComplexAttribute = (ComplexAttribute) entry;
-        Map<String, Attribute> entryAttributes = null;
-        if (entryOfComplexAttribute != null) {
-            if (entryOfComplexAttribute.getSubAttributesList() != null &&
-                    !entryOfComplexAttribute.getSubAttributesList().isEmpty()) {
-                entryAttributes = entryOfComplexAttribute.getSubAttributesList();
-            }
-            if (entryAttributes != null) {
-                for (Attribute subEntry : entryAttributes.values()) {
-                    // attribute can only be simple attribute and that also in the extension schema only
+        Map<String, Attribute> entryAttributes;
+        if (entryOfComplexAttribute.getSubAttributesList() != null &&
+                MapUtils.isNotEmpty(entryOfComplexAttribute.getSubAttributesList())) {
+            entryAttributes = entryOfComplexAttribute.getSubAttributesList();
+            for (Attribute subEntry : entryAttributes.values()) {
+                // attribute can only be simple attribute and that also in the extension schema only
+                if (subEntry.getMultiValued()) {
+                    setClaimsForMultivaluedAttribute(subEntry, claimsMap);
+                } else {
                     setClaimsForSimpleAttribute(subEntry, claimsMap);
                 }
             }
-
         }
-
     }
-
 
     /*
      * Construct the SCIM Object given the attribute URIs and attribute values of the object.
@@ -215,16 +214,19 @@ public class SCIMClaimResolver {
     public static SCIMObject constructSCIMObjectFromAttributes(Map<String, String> attributes,
                                                                int scimObjectType)
             throws CharonException, NotFoundException, BadRequestException {
-
         SCIMObject scimObject = null;
         switch (scimObjectType) {
             case SCIM2CommonConstants.GROUP:
                 scimObject = new Group();
-                log.debug("Building Group Object");
+                if (debug) {
+                    log.debug("Building Group Object");
+                }
                 break;
             case SCIM2CommonConstants.USER:
                 scimObject = new User();
-                log.debug("Building User Object");
+                if (debug) {
+                    log.debug("Building User Object");
+                }
                 break;
             default:
                 break;
@@ -235,7 +237,7 @@ public class SCIMClaimResolver {
                         attributeEntry.getValue());
             }
             String attributeURI = attributeEntry.getKey();
-            String[] attributeNames = null;
+            String[] attributeNames;
 
             if (attributeURI.contains(SCIMConstants.CORE_SCHEMA_URI)) {
                 String[] attributeURIParts = attributeURI.split(":");
@@ -245,11 +247,9 @@ public class SCIMClaimResolver {
                 ArrayList<String> tempAttributeNames = new ArrayList<>();
                 String extensionURI = "";
                 String[] attributeURIParts = attributeURI.split(":");
-                StringBuffer str = new StringBuffer();
                 for (int i = 0; i < attributeURIParts.length - 1; i++) {
-                    str.append(":").append(attributeURIParts[i]);
+                    extensionURI = extensionURI + ":" + attributeURIParts[i];
                 }
-                extensionURI = str.toString();
                 String attributeNameString = attributeURIParts[attributeURIParts.length - 1];
                 attributeNames = attributeNameString.split("\\.");
                 tempAttributeNames.add(extensionURI.substring(1));
@@ -261,22 +261,16 @@ public class SCIMClaimResolver {
             }
 
             if (attributeNames.length == 1) {
-
                 constructSCIMObjectFromAttributesOfLevelOne(attributeEntry, scimObject, attributeNames, scimObjectType);
-
             } else if (attributeNames.length == 2) {
-
                 constructSCIMObjectFromAttributesOfLevelTwo(attributeEntry, scimObject, attributeNames, scimObjectType);
-
             } else if (attributeNames.length == 3) {
-
                 constructSCIMObjectFromAttributesOfLevelThree(attributeEntry, scimObject, attributeNames,
                         scimObjectType);
             }
         }
         return scimObject;
     }
-
 
     /*
      * construct the level one attributes like nickName
@@ -292,7 +286,6 @@ public class SCIMClaimResolver {
                                                                    SCIMObject scimObject, String[] attributeNames,
                                                                    int scimObjectType)
             throws BadRequestException, CharonException {
-
         //get attribute schema
         AttributeSchema attributeSchema = getAttributeSchema(attributeEntry.getKey(), scimObjectType);
         if (attributeSchema != null) {
@@ -302,21 +295,18 @@ public class SCIMClaimResolver {
                 String value = attributeEntry.getValue();
                 Object[] values = value.split(",");
                 //create attribute
-                MultiValuedAttribute multiValuedAttribute = new MultiValuedAttribute(
-                        attributeSchema.getName());
+                MultiValuedAttribute multiValuedAttribute = new MultiValuedAttribute(attributeSchema.getName());
                 //set values
                 multiValuedAttribute.setAttributePrimitiveValues(Arrays.asList(values));
                 //set attribute in scim object
                 DefaultAttributeFactory.createAttribute(attributeSchema, multiValuedAttribute);
                 ((AbstractSCIMObject) scimObject).setAttribute(multiValuedAttribute);
-
             } else {
                 //convert attribute to relevant type
-                Object attributeValueObject = AttributeUtil.getAttributeValueFromString(
-                        attributeEntry.getValue(), attributeSchema.getType());
+                Object attributeValueObject = AttributeUtil.getAttributeValueFromString(attributeEntry.getValue(),
+                        attributeSchema.getType());
                 //create attribute
-                SimpleAttribute simpleAttribute = new SimpleAttribute(attributeNames[0],
-                        attributeValueObject);
+                SimpleAttribute simpleAttribute = new SimpleAttribute(attributeNames[0], attributeValueObject);
                 DefaultAttributeFactory.createAttribute(attributeSchema, simpleAttribute);
                 //set attribute in the SCIM object
                 ((AbstractSCIMObject) scimObject).setAttribute(simpleAttribute);
@@ -339,7 +329,6 @@ public class SCIMClaimResolver {
                                                                    SCIMObject scimObject, String[] attributeNames,
                                                                    int scimObjectType)
             throws BadRequestException, CharonException, NotFoundException {
-
         //get parent attribute name
         String parentAttributeName = attributeNames[0];
         //get parent attribute schema
@@ -348,13 +337,11 @@ public class SCIMClaimResolver {
             parentAttributeURI = attributeEntry.getKey().replace(":" + attributeNames[1], "");
         }
         AttributeSchema parentAttributeSchema = getAttributeSchema(parentAttributeURI, scimObjectType);
-
-                /*differentiate between sub attribute of Complex attribute and a Multivalued attribute
-                with complex value*/
+        // differentiate between sub attribute of Complex attribute and a Multivalued attribute with complex value
         if (parentAttributeSchema.getMultiValued()) {
             //get the value sub attribute
             String valueAttributeURI = attributeEntry.getKey().replace("." + attributeNames[1], "");
-            AttributeSchema valueSubAttributeSchema = null;
+            AttributeSchema valueSubAttributeSchema;
             if (valueAttributeURI.equals(SCIMConstants.UserSchemaConstants.ADDRESSES_URI)) {
                 valueAttributeURI = valueAttributeURI + ".formatted";
                 valueSubAttributeSchema = getAttributeSchema(valueAttributeURI, scimObjectType);
@@ -376,8 +363,8 @@ public class SCIMClaimResolver {
             DefaultAttributeFactory.createAttribute(valueSubAttributeSchema, valueSimpleAttribute);
 
             //need to set a complex type value for multivalued attribute
-            Object type = SCIMProvisioningConnectorConstants.DEFAULT;
-            Object value = SCIMProvisioningConnectorConstants.DEFAULT;
+            Object type = SCIM2ProvisioningConnectorConstants.DEFAULT;
+            Object value = SCIM2ProvisioningConnectorConstants.DEFAULT;
 
             if (typeSimpleAttribute.getValue() != null) {
                 type = typeSimpleAttribute.getValue();
@@ -409,15 +396,13 @@ public class SCIMClaimResolver {
             //sub attribute of a complex attribute
             AttributeSchema subAttributeSchema = getAttributeSchema(attributeEntry.getKey(), scimObjectType);
             //we assume sub attribute is simple attribute
-            SimpleAttribute simpleAttribute =
-                    new SimpleAttribute(attributeNames[1],
-                            AttributeUtil.getAttributeValueFromString(attributeEntry.getValue(),
-                                    subAttributeSchema.getType()));
+            SimpleAttribute simpleAttribute = new SimpleAttribute(attributeNames[1], AttributeUtil.
+                    getAttributeValueFromString(attributeEntry.getValue(), subAttributeSchema.getType()));
             DefaultAttributeFactory.createAttribute(subAttributeSchema, simpleAttribute);
             //check whether parent attribute exists.
             if (((AbstractSCIMObject) scimObject).isAttributeExist(parentAttributeSchema.getName())) {
-                ComplexAttribute complexAttribute =
-                        (ComplexAttribute) scimObject.getAttribute(parentAttributeSchema.getName());
+                ComplexAttribute complexAttribute = (ComplexAttribute) scimObject.getAttribute(parentAttributeSchema.
+                        getName());
                 complexAttribute.setSubAttribute(simpleAttribute);
             } else {
                 //create parent attribute and set sub attribute
@@ -426,7 +411,6 @@ public class SCIMClaimResolver {
                 DefaultAttributeFactory.createAttribute(parentAttributeSchema, complexAttribute);
                 ((AbstractSCIMObject) scimObject).setAttribute(complexAttribute);
             }
-
         }
     }
 
@@ -444,29 +428,20 @@ public class SCIMClaimResolver {
                                                                      SCIMObject scimObject, String[] attributeNames,
                                                                      int scimObjectType) throws BadRequestException,
             CharonException {
-
         String parentAttribute = attributeNames[0];
         //get immediate parent attribute name
         String immediateParentAttributeName = attributeNames[1];
-
         String subAttributeURI = attributeEntry.getKey().replace("." + attributeNames[2], "");
-
         String parentAttributeURI = subAttributeURI.replace(":" + attributeNames[1], "");
-
         AttributeSchema subAttributeSchema = getAttributeSchema(subAttributeURI, scimObjectType);
-
         AttributeSchema attributeSchema = getAttributeSchema(parentAttributeURI, scimObjectType);
-
-                /*differentiate between sub attribute of Complex attribute and a Multivalued attribute
-                with complex value*/
+        // differentiate between sub attribute of Complex attribute and a Multivalued attribute with complex value
         if (subAttributeSchema.getMultiValued()) {
-
             SimpleAttribute typeSimpleAttribute = new SimpleAttribute(SCIMConstants.CommonSchemaConstants.TYPE,
                     attributeNames[2]);
             AttributeSchema typeAttributeSchema = getAttributeSchema(subAttributeSchema.getURI() + ".type",
                     scimObjectType);
             DefaultAttributeFactory.createAttribute(typeAttributeSchema, typeSimpleAttribute);
-
             AttributeSchema valueAttributeSchema = getAttributeSchema(subAttributeSchema.getURI() + ".value",
                     scimObjectType);
             SimpleAttribute valueSimpleAttribute = new SimpleAttribute(SCIMConstants.CommonSchemaConstants.VALUE,
@@ -475,8 +450,8 @@ public class SCIMClaimResolver {
             DefaultAttributeFactory.createAttribute(valueAttributeSchema, valueSimpleAttribute);
 
             //need to set a complex type value for multivalued attribute
-            Object type = SCIMProvisioningConnectorConstants.DEFAULT;
-            Object value = SCIMProvisioningConnectorConstants.DEFAULT;
+            Object type = SCIM2ProvisioningConnectorConstants.DEFAULT;
+            Object value = SCIM2ProvisioningConnectorConstants.DEFAULT;
 
             if (typeSimpleAttribute.getValue() != null) {
                 type = typeSimpleAttribute.getValue();
@@ -515,7 +490,6 @@ public class SCIMClaimResolver {
                 extensionComplexAttribute.setSubAttribute(multivaluedAttribute);
             }
         } else {
-
             AttributeSchema subSubAttributeSchema = getAttributeSchema(attributeEntry.getKey(), scimObjectType);
             //we assume sub attribute is simple attribute
             SimpleAttribute simpleAttribute = new SimpleAttribute(attributeNames[2],
@@ -559,14 +533,13 @@ public class SCIMClaimResolver {
     }
 
     /*
-     * return the attribute schema for the asked attribute URI
+     * return the attribute schema for the asked attribute URI.
      *
      * @param attributeURI
      * @param scimObjectType
      * @return
      */
     private static AttributeSchema getAttributeSchema(String attributeURI, int scimObjectType) {
-
         ResourceTypeSchema resourceSchema = getResourceSchema(scimObjectType);
         if (resourceSchema != null) {
             List<AttributeSchema> attributeSchemas = resourceSchema.getAttributesList();
@@ -607,13 +580,12 @@ public class SCIMClaimResolver {
     }
 
     /*
-     * return the corresponding resource type schema
+     * return the corresponding resource type schema.
      *
      * @param scimObjectType
      * @return
      */
     private static ResourceTypeSchema getResourceSchema(int scimObjectType) {
-
         ResourceTypeSchema resourceSchema = null;
         switch (scimObjectType) {
             case 1:
@@ -627,5 +599,4 @@ public class SCIMClaimResolver {
         }
         return resourceSchema;
     }
-
 }
