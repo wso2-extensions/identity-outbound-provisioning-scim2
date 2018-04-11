@@ -1,0 +1,11 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="Identity-connector-scim2-test-suite">
+    <test name="scim2-connector-all" preserve-order="true" parallel="false">
+        <classes>
+            <class name="org.wso2.carbon.identity.provisioning.connector.scim2.test.SCIM2ProvisioningConnectorFactoryTest"/>
+            <class name="org.wso2.carbon.identity.provisioning.connector.scim2.test.SCIM2ProvisioningConnectorTest"/>
+            <class name="org.wso2.carbon.identity.provisioning.connector.scim2.test.SCIMClaimResolverTest"/>
+        </classes>
+    </test>
+</suite>
