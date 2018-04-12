@@ -118,30 +118,42 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             }
 
             if (provisioningEntity.getEntityType() == ProvisioningEntityType.USER) {
-                if (provisioningEntity.getOperation() == ProvisioningOperation.POST) {
-                    createUser(provisioningEntity);
-                } else if (provisioningEntity.getOperation() == ProvisioningOperation.DELETE) {
-                    deleteUser(provisioningEntity);
-                } else if (provisioningEntity.getOperation() == ProvisioningOperation.PUT) {
-                    updateUser(provisioningEntity, ProvisioningOperation.PUT);
-                } else {
-                    log.warn("Unsupported provisioning operation : " + provisioningEntity.getOperation());
-                }
+                provisionUser(provisioningEntity);
             } else if (provisioningEntity.getEntityType() == ProvisioningEntityType.GROUP) {
-                if (provisioningEntity.getOperation() == ProvisioningOperation.DELETE) {
-                    deleteGroup(provisioningEntity);
-                } else if (provisioningEntity.getOperation() == ProvisioningOperation.POST) {
-                    createGroup(provisioningEntity);
-                } else if (provisioningEntity.getOperation() == ProvisioningOperation.PUT) {
-                    updateGroup(provisioningEntity);
-                } else {
-                    log.warn("Unsupported provisioning operation : " + provisioningEntity.getOperation());
-                }
+                provisionGroup(provisioningEntity);
             } else {
                 log.warn("Unsupported provisioning entity : " + provisioningEntity.getEntityName());
             }
         }
         return null;
+    }
+
+    private void provisionGroup(ProvisioningEntity provisioningEntity) throws IdentityProvisioningException {
+
+        if (provisioningEntity.getOperation() == ProvisioningOperation.DELETE) {
+            deleteGroup(provisioningEntity);
+        } else if (provisioningEntity.getOperation() == ProvisioningOperation.POST) {
+            createGroup(provisioningEntity);
+        } else if (provisioningEntity.getOperation() == ProvisioningOperation.PUT) {
+            updateGroup(provisioningEntity);
+        } else {
+            log.warn("Unsupported provisioning operation : " + provisioningEntity.getOperation() +
+                    " for provisioning entity : " + provisioningEntity.getEntityName());
+        }
+    }
+
+    private void provisionUser(ProvisioningEntity provisioningEntity) throws IdentityProvisioningException {
+
+        if (provisioningEntity.getOperation() == ProvisioningOperation.POST) {
+            createUser(provisioningEntity);
+        } else if (provisioningEntity.getOperation() == ProvisioningOperation.DELETE) {
+            deleteUser(provisioningEntity);
+        } else if (provisioningEntity.getOperation() == ProvisioningOperation.PUT) {
+            updateUser(provisioningEntity, ProvisioningOperation.PUT);
+        } else {
+            log.warn("Unsupported provisioning operation : " + provisioningEntity.getOperation() +
+                    " for provisioning entity : " + provisioningEntity.getEntityName());
+        }
     }
 
     /**
@@ -249,7 +261,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             Group group = new Group();
             group.setDisplayName(groupName);
             List<String> userList = getUserNames(groupEntity.getAttributes());
-            this.setGroupMembers(group, userList);
+            setGroupMembers(group, userList);
             ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, group, null);
             scimProvsioningClient.provisionCreateGroup();
         } catch (Exception e) {
@@ -301,7 +313,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             Group group = new Group();
             group.setDisplayName(groupName);
             List<String> userList = getUserNames(groupEntity.getAttributes());
-            this.setGroupMembers(group, userList);
+            setGroupMembers(group, userList);
 
             oldGroupName = ProvisioningUtil.getAttributeValue(groupEntity,
                     IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI);
@@ -362,10 +374,10 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
         if ("true".equals(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
                 SCIM_ENABLE_PASSWORD_PROVISIONING))) {
-            this.setPassword(user, getPassword(userEntity.getAttributes()));
+            setPassword(user, getPassword(userEntity.getAttributes()));
         } else if (StringUtils.isNotBlank(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
                 SCIM_DEFAULT_PASSWORD))) {
-            this.setPassword(user, scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD));
+            setPassword(user, scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD));
         }
     }
 

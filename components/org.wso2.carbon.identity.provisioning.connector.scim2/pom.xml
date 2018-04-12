@@ -192,7 +192,6 @@
 							org.wso2.carbon.identity.provisioning.connector.scim2.*;
 							version="${identity.outbound.provisioning.scim2.export.version}"
 						</Export-Package>
-						<DynamicImport-Package>*</DynamicImport-Package>
 					</instructions>
 				</configuration>
 			</plugin>
