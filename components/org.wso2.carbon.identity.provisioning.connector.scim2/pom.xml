@@ -182,7 +182,7 @@
 							version="${carbon.identity.framework.import.version.range}",
 							org.wso2.carbon.identity.provisioning;
 							version="${carbon.identity.framework.import.version.range}",
-							org.wso2.charon3.core.*; version="${charon.wso2.version.identity}",
+							org.wso2.charon3.core.*; version="${charon.wso2.import.version.range}",
 							org.wso2.scim2.*;version="${identity.scim2.client.version}",
 							io.scim2.swagger.client.*;version="${identity.scim2.client.version}"
 						</Import-Package>
