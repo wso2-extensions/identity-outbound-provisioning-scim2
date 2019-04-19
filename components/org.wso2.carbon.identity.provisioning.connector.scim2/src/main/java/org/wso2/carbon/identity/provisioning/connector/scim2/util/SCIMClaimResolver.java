@@ -597,21 +597,21 @@ public class SCIMClaimResolver {
                 }
                 if (attributeSchema.getType().equals(SCIMDefinitions.DataType.COMPLEX)) {
                     if (attributeSchema.getMultiValued()) {
-                        List<SCIMAttributeSchema> subAttributeSchemaList = attributeSchema.getSubAttributeSchemas();
+                        List<AttributeSchema> subAttributeSchemaList = attributeSchema.getSubAttributeSchemas();
                         for (AttributeSchema subAttributeSchema : subAttributeSchemaList) {
                             if (attributeURI.equals(subAttributeSchema.getURI())) {
                                 return subAttributeSchema;
                             }
                         }
                     } else {
-                        List<SCIMAttributeSchema> subAttributeSchemaList = attributeSchema.getSubAttributeSchemas();
+                        List<AttributeSchema> subAttributeSchemaList = attributeSchema.getSubAttributeSchemas();
                         for (AttributeSchema subAttributeSchema : subAttributeSchemaList) {
                             if (attributeURI.equals(subAttributeSchema.getURI())) {
                                 return subAttributeSchema;
                             }
                             if (subAttributeSchema.getType().equals(SCIMDefinitions.DataType.COMPLEX)) {
                                 // this is only valid for extension schema
-                                List<SCIMAttributeSchema> subSubAttributeSchemaList = subAttributeSchema
+                                List<AttributeSchema> subSubAttributeSchemaList = subAttributeSchema
                                         .getSubAttributeSchemas();
                                 for (AttributeSchema subSubAttributeSchema : subSubAttributeSchemaList) {
                                     if (attributeURI.equals(subSubAttributeSchema.getURI())) {
