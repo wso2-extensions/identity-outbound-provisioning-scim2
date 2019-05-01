@@ -308,7 +308,7 @@
         <osgi.framework.imp.pkg.version.range>[1.7.0, 2.0.0)</osgi.framework.imp.pkg.version.range>
         <osgi.service.component.imp.pkg.version.range>[1.2.0, 2.0.0)</osgi.service.component.imp.pkg.version.range>
         <!-- Charon version -->
-        <charon.wso2.version.identity>3.1.20</charon.wso2.version.identity>
+        <charon.wso2.version.identity>3.1.21</charon.wso2.version.identity>
         <charon.wso2.import.version.range>[3.0.0, 4.0.0)</charon.wso2.import.version.range>
         <!-- Commons -->
         <commons-lang.wso2.osgi.version.range>[2.6.0,3.0.0)</commons-lang.wso2.osgi.version.range>
