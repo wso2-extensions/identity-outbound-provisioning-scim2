@@ -58,7 +58,7 @@ import java.util.Map;
 public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConnector {
 
     private static final long serialVersionUID = -2800777564581005554L;
-    private static Log log = LogFactory.getLog(SCIM2ProvisioningConnector.class);
+    private static final Log log = LogFactory.getLog(SCIM2ProvisioningConnector.class);
     private SCIMProvider scimProvider;
     private String userStoreDomainName;
 

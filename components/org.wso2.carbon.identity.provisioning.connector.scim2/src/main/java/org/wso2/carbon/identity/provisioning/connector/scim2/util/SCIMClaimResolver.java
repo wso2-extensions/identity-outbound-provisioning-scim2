@@ -53,7 +53,7 @@ import java.util.Arrays;
  */
 public class SCIMClaimResolver {
 
-    private static Log log = LogFactory.getLog(SCIMClaimResolver.class);
+    private static final Log log = LogFactory.getLog(SCIMClaimResolver.class);
     private static final boolean debug = log.isDebugEnabled();
 
     /*
