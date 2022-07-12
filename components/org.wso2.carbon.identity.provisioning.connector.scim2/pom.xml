@@ -115,6 +115,10 @@
 			<version>${powermock.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.squareup.okio</groupId>
+			<artifactId>okio</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -171,6 +175,7 @@
 							org.apache.commons.logging; version="${commons-logging.osgi.version.range}",
 							org.apache.commons.collections; version="${commons-collections.wso2.osgi.version.range}",
 							org.apache.commons.lang; version="${commons-lang.wso2.osgi.version.range}",
+							org.json;version="${json.wso2.version.range}",
 							org.osgi.framework; version="${osgi.framework.imp.pkg.version.range}",
 							org.osgi.service.component; version="${osgi.service.component.imp.pkg.version.range}",
 							org.wso2.carbon.identity.application.common.model;
@@ -185,7 +190,11 @@
 							!org.wso2.carbon.identity.provisioning.connector.scim2.internal,
 							org.wso2.carbon.identity.provisioning.connector.scim2.*;
 							version="${identity.outbound.provisioning.scim2.export.version}"
+							com.squareup.okio.*
 						</Export-Package>
+						<Embed-Dependency>
+							org.wso2.carbon.extension.identity.scim2.client;okio;scope=compile|runtime;inline=false
+						</Embed-Dependency>
 					</instructions>
 				</configuration>
 			</plugin>
