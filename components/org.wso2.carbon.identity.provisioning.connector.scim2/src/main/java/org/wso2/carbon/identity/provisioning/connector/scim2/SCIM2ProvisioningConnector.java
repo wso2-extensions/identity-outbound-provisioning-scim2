@@ -65,8 +65,8 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     /**
      * Populates the SCIM2 configuration properties.
      *
-     * @param provisioningProperties
-     * @throws IdentityProvisioningException
+     * @param provisioningProperties            Properties of the SCIM2 provisioning connector.
+     * @throws IdentityProvisioningException    Error when initializing the connector.
      */
     @Override
     public void init(Property[] provisioningProperties) throws IdentityProvisioningException {
@@ -104,9 +104,9 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     /**
      * Initiates the SCIM2 operation.
      *
-     * @param provisioningEntity
+     * @param provisioningEntity    The entity to be provisioned through the connector.
      * @return provisionedEntity
-     * @throws IdentityProvisioningException
+     * @throws IdentityProvisioningException    Error when provisioning the entity.
      */
     @Override
     public ProvisionedIdentifier provision(ProvisioningEntity provisioningEntity) throws IdentityProvisioningException {
@@ -355,7 +355,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
      * Returns the Claim dialect Uri.
      *
      * @return Scim dialect
-     * @throws IdentityProvisioningException
+     * @throws IdentityProvisioningException Error when getting the claim dialect URI.
      */
     @Override
     public String getClaimDialectUri() throws IdentityProvisioningException {
