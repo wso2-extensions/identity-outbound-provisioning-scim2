@@ -25,9 +25,7 @@ import org.wso2.carbon.identity.provisioning.AbstractProvisioningConnectorFactor
 import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningConnectorFactory;
 
 /**
- * @scr.component name=
- * "org.wso2.carbon.identity.provisioning.connector.scim2.internal.SCIM2ConnectorServiceComponent"
- * immediate="true"
+ * OSGI Service Component that handles SCIM2 Connector activation.
  */
 public class SCIM2ConnectorServiceComponent {
     private static final Log log = LogFactory.getLog(SCIM2ConnectorServiceComponent.class);

@@ -37,9 +37,9 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
     /**
      * Initializes the SCIM2 provisioning connector.
      *
-     * @param provisioningProperties
+     * @param provisioningProperties            Properties of the SCIM2 provisioning connector.
      * @return AbstractOutboundProvisioningConnector
-     * @throws IdentityProvisioningException
+     * @throws IdentityProvisioningException    Error when initializing the SCIM2 provisioning connector.
      */
     @Override
     protected AbstractOutboundProvisioningConnector buildConnector(Property[] provisioningProperties)
