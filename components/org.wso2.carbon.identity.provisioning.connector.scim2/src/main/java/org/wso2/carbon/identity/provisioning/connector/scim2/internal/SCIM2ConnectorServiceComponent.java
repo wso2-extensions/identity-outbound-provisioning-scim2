@@ -20,7 +20,7 @@ package org.wso2.carbon.identity.provisioning.connector.scim2.internal;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.osgi.framework.BundleContext;
+import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.wso2.carbon.identity.provisioning.AbstractProvisioningConnectorFactory;
@@ -37,7 +37,7 @@ public class SCIM2ConnectorServiceComponent {
     private static final Log log = LogFactory.getLog(SCIM2ConnectorServiceComponent.class);
 
     @Activate
-    protected void activate(BundleContext context) {
+    protected void activate(ComponentContext context) {
 
         if (log.isDebugEnabled()) {
             log.debug("Activating SCIM2ConnectorServiceComponent");
@@ -46,7 +46,7 @@ public class SCIM2ConnectorServiceComponent {
         try {
             SCIM2ProvisioningConnectorFactory scim2ProvisioningConnectorFactory = new
                     SCIM2ProvisioningConnectorFactory();
-            context.registerService(AbstractProvisioningConnectorFactory.class.getName(),
+            context.getBundleContext().registerService(AbstractProvisioningConnectorFactory.class.getName(),
                     scim2ProvisioningConnectorFactory, null);
             if (log.isDebugEnabled()) {
                 log.debug("SCIM2 Provisioning Connector bundle is activated");
