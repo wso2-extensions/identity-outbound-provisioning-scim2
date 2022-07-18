@@ -82,7 +82,7 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
     public void testCreateUser() throws Exception {
 
         PowerMockito.when(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
-                SCIM_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
+                SCIM2_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
         sCIM2ProvisioningConnector.init(new Property[0]);
         PowerMockito.whenNew(ProvisioningClient.class).withArguments(Mockito.anyObject(), Mockito.anyObject(),
                 Mockito.anyObject()).thenReturn(provisioningClient);
@@ -105,7 +105,7 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
     public void testUpdateUser() throws Exception {
 
         PowerMockito.when(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
-                SCIM_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
+                SCIM2_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
         sCIM2ProvisioningConnector.init(new Property[0]);
         PowerMockito.whenNew(ProvisioningClient.class).withArguments(Mockito.anyObject(), Mockito.anyObject(),
                 Mockito.anyObject()).thenReturn(provisioningClient);
@@ -128,7 +128,7 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
     public void testDeleteUser() throws Exception {
 
         PowerMockito.when(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
-                SCIM_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
+                SCIM2_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
         sCIM2ProvisioningConnector.init(new Property[0]);
         PowerMockito.whenNew(ProvisioningClient.class).withArguments(Mockito.anyObject(), Mockito.anyObject(),
                 Mockito.anyObject()).thenReturn(provisioningClient);
@@ -205,10 +205,10 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
 
         sCIM2ProvisioningConnector.init(new Property[0]);
         Property property = new Property();
-        property.setName(SCIM2ProvisioningConnectorConstants.SCIM_USERNAME);
+        property.setName(SCIM2ProvisioningConnectorConstants.SCIM2_USERNAME);
         property.setValue("testUser");
         Whitebox.invokeMethod(sCIM2ProvisioningConnector, "populateSCIMProvider",property,
-                SCIM2ProvisioningConnectorConstants.SCIM_USERNAME);
+                SCIM2ProvisioningConnectorConstants.SCIM2_USERNAME);
     }
 
     @Test

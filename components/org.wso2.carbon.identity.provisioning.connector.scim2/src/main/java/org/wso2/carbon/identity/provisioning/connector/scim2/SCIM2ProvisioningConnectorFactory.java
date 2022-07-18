@@ -75,42 +75,42 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         List<Property> properties = new ArrayList<Property>();
 
         Property username = new Property();
-        username.setName(SCIM2ProvisioningConnectorConstants.SCIM_USERNAME);
+        username.setName(SCIM2ProvisioningConnectorConstants.SCIM2_USERNAME);
         username.setDisplayName("Username");
         username.setDisplayOrder(1);
         username.setRequired(true);
 
         Property userPassword = new Property();
-        userPassword.setName(SCIM2ProvisioningConnectorConstants.SCIM_PASSWORD);
+        userPassword.setName(SCIM2ProvisioningConnectorConstants.SCIM2_PASSWORD);
         userPassword.setDisplayName("Password");
         userPassword.setConfidential(true);
         userPassword.setDisplayOrder(2);
         userPassword.setRequired(true);
 
         Property userEndpoint = new Property();
-        userEndpoint.setName(SCIM2ProvisioningConnectorConstants.SCIM_USER_EP);
+        userEndpoint.setName(SCIM2ProvisioningConnectorConstants.SCIM2_USER_EP);
         userEndpoint.setDisplayName("User Endpoint");
         userEndpoint.setDisplayOrder(3);
         userEndpoint.setRequired(true);
 
         Property groupEndpoint = new Property();
-        groupEndpoint.setName(SCIM2ProvisioningConnectorConstants.SCIM_GROUP_EP);
+        groupEndpoint.setName(SCIM2ProvisioningConnectorConstants.SCIM2_GROUP_EP);
         groupEndpoint.setDisplayName("Group Endpoint");
         groupEndpoint.setDisplayOrder(4);
 
         Property userStoreDomain = new Property();
-        userStoreDomain.setName(SCIM2ProvisioningConnectorConstants.SCIM_USERSTORE_DOMAIN);
+        userStoreDomain.setName(SCIM2ProvisioningConnectorConstants.SCIM2_USERSTORE_DOMAIN);
         userStoreDomain.setDisplayName("User Store Domain");
         userStoreDomain.setDisplayOrder(5);
 
         Property passwordProvisioning = new Property();
-        passwordProvisioning.setName(SCIM2ProvisioningConnectorConstants.SCIM_ENABLE_PASSWORD_PROVISIONING);
+        passwordProvisioning.setName(SCIM2ProvisioningConnectorConstants.SCIM2_ENABLE_PASSWORD_PROVISIONING);
         passwordProvisioning.setDisplayName("Enable Password Provisioning");
         passwordProvisioning.setDescription("Enable User password provisioning to a SCIM2 domain");
         passwordProvisioning.setDisplayOrder(6);
 
         Property defaultPassword = new Property();
-        defaultPassword.setName(SCIM2ProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD);
+        defaultPassword.setName(SCIM2ProvisioningConnectorConstants.SCIM2_DEFAULT_PASSWORD);
         defaultPassword.setDisplayName("Default Password");
         defaultPassword.setDisplayOrder(7);
 
