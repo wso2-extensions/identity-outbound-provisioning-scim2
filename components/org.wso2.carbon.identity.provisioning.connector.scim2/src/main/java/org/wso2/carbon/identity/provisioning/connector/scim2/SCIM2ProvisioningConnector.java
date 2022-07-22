@@ -74,23 +74,23 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
         scimProvider = new SCIMProvider();
         if (provisioningProperties != null && provisioningProperties.length > 0) {
             for (Property property : provisioningProperties) {
-                if (SCIM2ProvisioningConnectorConstants.SCIM_USER_EP.equals(property.getName())) {
+                if (SCIM2ProvisioningConnectorConstants.SCIM2_USER_EP.equals(property.getName())) {
                     populateSCIMProvider(property, SCIM2CommonConstants.ELEMENT_NAME_USER_ENDPOINT);
-                } else if (SCIM2ProvisioningConnectorConstants.SCIM_GROUP_EP.equals(property.getName())) {
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_GROUP_EP.equals(property.getName())) {
                     populateSCIMProvider(property, SCIM2CommonConstants.ELEMENT_NAME_GROUP_ENDPOINT);
-                } else if (SCIM2ProvisioningConnectorConstants.SCIM_USERNAME.equals(property.getName())) {
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_USERNAME.equals(property.getName())) {
                     populateSCIMProvider(property, SCIMConstants.UserSchemaConstants.USER_NAME);
-                } else if (SCIM2ProvisioningConnectorConstants.SCIM_PASSWORD.equals(property.getName())) {
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_PASSWORD.equals(property.getName())) {
                     populateSCIMProvider(property, SCIMConstants.UserSchemaConstants.PASSWORD);
-                } else if (SCIM2ProvisioningConnectorConstants.SCIM_USERSTORE_DOMAIN.equals(property.getName())) {
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_USERSTORE_DOMAIN.equals(property.getName())) {
                     userStoreDomainName = property.getValue() != null ? property.getValue()
                             : property.getDefaultValue();
-                } else if (SCIM2ProvisioningConnectorConstants.SCIM_ENABLE_PASSWORD_PROVISIONING.equals(property.
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_ENABLE_PASSWORD_PROVISIONING.equals(property.
                         getName())) {
                     populateSCIMProvider(property, SCIM2ProvisioningConnectorConstants.
-                            SCIM_ENABLE_PASSWORD_PROVISIONING);
-                } else if (SCIM2ProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD.equals(property.getName())) {
-                    populateSCIMProvider(property, SCIM2ProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD);
+                            SCIM2_ENABLE_PASSWORD_PROVISIONING);
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_DEFAULT_PASSWORD.equals(property.getName())) {
+                    populateSCIMProvider(property, SCIM2ProvisioningConnectorConstants.SCIM2_DEFAULT_PASSWORD);
                 }
 
                 if (IdentityProvisioningConstants.JIT_PROVISIONING_ENABLED.equals(property
@@ -359,7 +359,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
      */
     @Override
     public String getClaimDialectUri() throws IdentityProvisioningException {
-        return SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM_DIALECT;
+        return SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_DIALECT;
     }
 
     /**
@@ -373,11 +373,11 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     private void setUserPassword(User user, ProvisioningEntity userEntity) throws CharonException, BadRequestException {
 
         if ("true".equals(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
-                SCIM_ENABLE_PASSWORD_PROVISIONING))) {
+                SCIM2_ENABLE_PASSWORD_PROVISIONING))) {
             setPassword(user, getPassword(userEntity.getAttributes()));
         } else if (StringUtils.isNotBlank(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
-                SCIM_DEFAULT_PASSWORD))) {
-            setPassword(user, scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.SCIM_DEFAULT_PASSWORD));
+                SCIM2_DEFAULT_PASSWORD))) {
+            setPassword(user, scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.SCIM2_DEFAULT_PASSWORD));
         }
     }
 

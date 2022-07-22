@@ -25,7 +25,7 @@
     <groupId>org.wso2.carbon.identity.outbound.provisioning.scim2</groupId>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>identity-outbound-provisioning-scim2</artifactId>
-    <version>1.0.8-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>WSO2 Carbon - SCIM 2.0 - Provisioning Module</name>
     <description>
@@ -244,7 +244,7 @@
         <carbon.identity.framework.import.version.range>[5.0.0, 6.0.0)</carbon.identity.framework.import.version.range>
         <identity.framework.version>5.5.0</identity.framework.version>
         <carbon.identity.framework.import.version.range>[5.0.0, 6.0.0)</carbon.identity.framework.import.version.range>
-        <identity.inbound.provisioning.scim.version>1.1.19</identity.inbound.provisioning.scim.version>
+        <identity.inbound.provisioning.scim.version>5.1.3</identity.inbound.provisioning.scim.version>
         <identity.inbound.provisioning.scim.import.version.range>[5.0.0, 6.0.0)
         </identity.inbound.provisioning.scim.import.version.range>
         <identity.outbound.provisioning.scim2.export.version>${project.version}
@@ -255,7 +255,7 @@
         <osgi.service.component.imp.pkg.version.range>[1.2.0, 2.0.0)</osgi.service.component.imp.pkg.version.range>
         <!-- Charon version -->
         <charon.wso2.version.identity>3.1.21</charon.wso2.version.identity>
-        <charon.wso2.import.version.range>[3.0.0, 4.0.0)</charon.wso2.import.version.range>
+        <charon.wso2.import.version.range>[3.0.0, 4.1.0)</charon.wso2.import.version.range>
         <!-- Commons -->
         <commons-lang.wso2.osgi.version.range>[2.6.0,3.0.0)</commons-lang.wso2.osgi.version.range>
         <commons-logging.osgi.version.range>[1.2,2.0)</commons-logging.osgi.version.range>

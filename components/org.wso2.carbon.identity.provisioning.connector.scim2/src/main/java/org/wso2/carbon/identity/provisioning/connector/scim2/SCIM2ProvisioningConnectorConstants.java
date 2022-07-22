@@ -24,15 +24,15 @@ public class SCIM2ProvisioningConnectorConstants {
     private SCIM2ProvisioningConnectorConstants() {
     }
 
-    public static final String SCIM_USER_EP = "scim-user-ep";
-    public static final String SCIM_GROUP_EP = "scim-group-ep";
-    public static final String SCIM_USERNAME = "scim-username";
-    public static final String SCIM_PASSWORD = "scim-password";
-    public static final String SCIM_USERSTORE_DOMAIN = "scim-user-store-domain";
-    public static final String DEFAULT_SCIM_DIALECT = "urn:scim:schemas:core:2.0";
+    public static final String SCIM2_USER_EP = "scim2-user-ep";
+    public static final String SCIM2_GROUP_EP = "scim2-group-ep";
+    public static final String SCIM2_USERNAME = "scim2-username";
+    public static final String SCIM2_PASSWORD = "scim2-password";
+    public static final String SCIM2_USERSTORE_DOMAIN = "scim2-user-store-domain";
+    public static final String DEFAULT_SCIM2_DIALECT = "urn:scim:schemas:core:2.0";
 
-    public static final String SCIM_ENABLE_PASSWORD_PROVISIONING = "scim-enable-pwd-provisioning";
-    public static final String SCIM_DEFAULT_PASSWORD = "scim-default-pwd";
+    public static final String SCIM2_ENABLE_PASSWORD_PROVISIONING = "scim2-enable-pwd-provisioning";
+    public static final String SCIM2_DEFAULT_PASSWORD = "scim2-default-pwd";
 
     public static final String DEFAULT = "default";
     public static final String ATTRIBUTE_TYPE = ".type";
