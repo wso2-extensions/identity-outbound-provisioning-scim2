@@ -31,6 +31,7 @@ import org.wso2.carbon.identity.provisioning.ProvisioningEntityType;
 import org.wso2.carbon.identity.provisioning.ProvisioningOperation;
 import org.wso2.carbon.identity.provisioning.ProvisioningUtil;
 import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIMClaimResolver;
+import org.wso2.carbon.user.core.UserCoreConstants;
 import org.wso2.carbon.user.core.UserStoreException;
 import org.wso2.charon3.core.attributes.ComplexAttribute;
 import org.wso2.charon3.core.attributes.DefaultAttributeFactory;
@@ -220,7 +221,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
         try {
             List<String> userNames = getUserNames(userEntity.getAttributes());
             if (CollectionUtils.isNotEmpty(userNames)) {
-                userName = userNames.get(0);
+                userName = extractDomainFreeName(userNames.get(0));
             }
             User user;
             // get single-valued claims
@@ -232,13 +233,28 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                 user = new User();
             }
             user.setUserName(userName);
-            setUserPassword(user, userEntity);
             ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, user, null);
             if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
                 scimProvisioningClient.provisionUpdateUser();
             }
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while updating the user : " + userName, e);
+        }
+    }
+
+    /**
+     * Gets the domain free username.
+     *
+     * @param nameWithDomain
+     * @return
+     */
+    private String extractDomainFreeName(String nameWithDomain) {
+        int domainSeparatorIdx = nameWithDomain.indexOf(UserCoreConstants.DOMAIN_SEPARATOR);
+        if (domainSeparatorIdx > 0) {
+            String[] names = nameWithDomain.split(UserCoreConstants.DOMAIN_SEPARATOR);
+            return names[1].trim();
+        } else {
+            return null;
         }
     }
 
