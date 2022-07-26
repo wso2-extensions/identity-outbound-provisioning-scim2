@@ -243,22 +243,6 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     }
 
     /**
-     * Gets the domain free username.
-     *
-     * @param nameWithDomain
-     * @return
-     */
-    private String extractDomainFreeName(String nameWithDomain) {
-        int domainSeparatorIdx = nameWithDomain.indexOf(UserCoreConstants.DOMAIN_SEPARATOR);
-        if (domainSeparatorIdx > 0) {
-            String[] names = nameWithDomain.split(UserCoreConstants.DOMAIN_SEPARATOR);
-            return names[1].trim();
-        } else {
-            return null;
-        }
-    }
-
-    /**
      * Creates the group.
      *
      * @param groupEntity
@@ -368,14 +352,17 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     }
 
     /**
-     * Returns the Claim dialect Uri.
+     * Returns the Claim dialect URIs.
      *
-     * @return Scim dialect
+     * @return Scim dialects
      * @throws IdentityProvisioningException Error when getting the claim dialect URI.
      */
     @Override
-    public String getClaimDialectUri() throws IdentityProvisioningException {
-        return SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_DIALECT;
+    public String[] getClaimDialectUris() {
+
+        return new String[]{SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_CORE_DIALECT,
+                SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_USER_DIALECT,
+                SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_ENTERPRISE_DIALECT};
     }
 
     /**
@@ -488,5 +475,22 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     @Override
     protected String getUserStoreDomainName() {
         return userStoreDomainName;
+    }
+
+    /**
+     * Gets the domain free username.
+     *
+     * @param nameWithDomain Username with domain.
+     * @return domainFreeName
+     */
+    private String extractDomainFreeName(String nameWithDomain) {
+
+        int domainSeparatorIdx = nameWithDomain.indexOf(UserCoreConstants.DOMAIN_SEPARATOR);
+        if (domainSeparatorIdx > 0) {
+            String[] names = nameWithDomain.split(UserCoreConstants.DOMAIN_SEPARATOR);
+            return names[1].trim();
+        } else {
+            return null;
+        }
     }
 }
