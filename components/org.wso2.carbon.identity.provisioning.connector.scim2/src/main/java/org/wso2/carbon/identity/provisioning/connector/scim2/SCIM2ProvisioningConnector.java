@@ -355,7 +355,6 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
      * Returns the Claim dialect URIs.
      *
      * @return Scim dialects
-     * @throws IdentityProvisioningException Error when getting the claim dialect URI.
      */
     @Override
     public String[] getClaimDialectUris() {
@@ -490,7 +489,11 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             String[] names = nameWithDomain.split(UserCoreConstants.DOMAIN_SEPARATOR);
             return names[1].trim();
         } else {
-            return null;
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("Domain is not available for username: %s. Therefore returning the " +
+                        "original username.", nameWithDomain));
+            }
+            return nameWithDomain;
         }
     }
 }

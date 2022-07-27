@@ -20,6 +20,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.application.common.model.Property;
+import org.wso2.carbon.identity.application.common.model.SubProperty;
 import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningConnectorFactory;
 
 import java.util.ArrayList;
@@ -65,9 +66,9 @@ public class SCIM2ProvisioningConnectorFactoryTest {
         Property userStoreDomain = new Property();
         configProperties.add(userStoreDomain);
         Property passwordProvisioning = new Property();
+        SubProperty defaultPassword = new SubProperty();
+        passwordProvisioning.setSubProperties(new SubProperty[] {defaultPassword});
         configProperties.add(passwordProvisioning);
-        Property defaultPassword = new Property();
-        configProperties.add(defaultPassword);
         Assert.assertEquals(configProperties.size(), scim2ProvisioningConnectorFactory.getConfigurationProperties().
                 size());
     }
