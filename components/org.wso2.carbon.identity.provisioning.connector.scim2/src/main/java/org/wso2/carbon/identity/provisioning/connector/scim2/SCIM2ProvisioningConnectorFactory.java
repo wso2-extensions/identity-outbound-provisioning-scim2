@@ -19,6 +19,7 @@ package org.wso2.carbon.identity.provisioning.connector.scim2;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.application.common.model.Property;
+import org.wso2.carbon.identity.application.common.model.SubProperty;
 import org.wso2.carbon.identity.provisioning.AbstractOutboundProvisioningConnector;
 import org.wso2.carbon.identity.provisioning.AbstractProvisioningConnectorFactory;
 import org.wso2.carbon.identity.provisioning.IdentityProvisioningException;
@@ -79,6 +80,7 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         username.setDisplayName("Username");
         username.setDisplayOrder(1);
         username.setRequired(true);
+        username.setType("string");
 
         Property userPassword = new Property();
         userPassword.setName(SCIM2ProvisioningConnectorConstants.SCIM2_PASSWORD);
@@ -86,33 +88,46 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         userPassword.setConfidential(true);
         userPassword.setDisplayOrder(2);
         userPassword.setRequired(true);
+        userPassword.setType("string");
 
         Property userEndpoint = new Property();
         userEndpoint.setName(SCIM2ProvisioningConnectorConstants.SCIM2_USER_EP);
         userEndpoint.setDisplayName("User Endpoint");
         userEndpoint.setDisplayOrder(3);
         userEndpoint.setRequired(true);
+        userEndpoint.setType("string");
 
         Property groupEndpoint = new Property();
         groupEndpoint.setName(SCIM2ProvisioningConnectorConstants.SCIM2_GROUP_EP);
         groupEndpoint.setDisplayName("Group Endpoint");
         groupEndpoint.setDisplayOrder(4);
+        groupEndpoint.setType("string");
+        groupEndpoint.setRequired(false);
 
         Property userStoreDomain = new Property();
         userStoreDomain.setName(SCIM2ProvisioningConnectorConstants.SCIM2_USERSTORE_DOMAIN);
         userStoreDomain.setDisplayName("User Store Domain");
         userStoreDomain.setDisplayOrder(5);
+        userStoreDomain.setRequired(false);
+        userStoreDomain.setType("string");
 
         Property passwordProvisioning = new Property();
         passwordProvisioning.setName(SCIM2ProvisioningConnectorConstants.SCIM2_ENABLE_PASSWORD_PROVISIONING);
         passwordProvisioning.setDisplayName("Enable Password Provisioning");
         passwordProvisioning.setDescription("Enable User password provisioning to a SCIM2 domain");
         passwordProvisioning.setDisplayOrder(6);
+        passwordProvisioning.setRequired(false);
+        passwordProvisioning.setType("boolean");
+        passwordProvisioning.setDefaultValue("true");
 
-        Property defaultPassword = new Property();
+        SubProperty defaultPassword = new SubProperty();
         defaultPassword.setName(SCIM2ProvisioningConnectorConstants.SCIM2_DEFAULT_PASSWORD);
         defaultPassword.setDisplayName("Default Password");
         defaultPassword.setDisplayOrder(7);
+        defaultPassword.setRequired(false);
+        defaultPassword.setType("string");
+        defaultPassword.setConfidential(true);
+        passwordProvisioning.setSubProperties(new SubProperty[] {defaultPassword});
 
         properties.add(username);
         properties.add(userPassword);
@@ -120,7 +135,6 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         properties.add(groupEndpoint);
         properties.add(userStoreDomain);
         properties.add(passwordProvisioning);
-        properties.add(defaultPassword);
 
         return properties;
     }

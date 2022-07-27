@@ -31,6 +31,7 @@ import org.wso2.carbon.identity.provisioning.ProvisioningEntityType;
 import org.wso2.carbon.identity.provisioning.ProvisioningOperation;
 import org.wso2.carbon.identity.provisioning.ProvisioningUtil;
 import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIMClaimResolver;
+import org.wso2.carbon.user.core.UserCoreConstants;
 import org.wso2.carbon.user.core.UserStoreException;
 import org.wso2.charon3.core.attributes.ComplexAttribute;
 import org.wso2.charon3.core.attributes.DefaultAttributeFactory;
@@ -220,7 +221,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
         try {
             List<String> userNames = getUserNames(userEntity.getAttributes());
             if (CollectionUtils.isNotEmpty(userNames)) {
-                userName = userNames.get(0);
+                userName = extractDomainFreeName(userNames.get(0));
             }
             User user;
             // get single-valued claims
@@ -232,7 +233,6 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                 user = new User();
             }
             user.setUserName(userName);
-            setUserPassword(user, userEntity);
             ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, user, null);
             if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
                 scimProvisioningClient.provisionUpdateUser();
@@ -352,14 +352,16 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     }
 
     /**
-     * Returns the Claim dialect Uri.
+     * Returns the Claim dialect URIs.
      *
-     * @return Scim dialect
-     * @throws IdentityProvisioningException Error when getting the claim dialect URI.
+     * @return Scim dialects
      */
     @Override
-    public String getClaimDialectUri() throws IdentityProvisioningException {
-        return SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_DIALECT;
+    public String[] getClaimDialectUris() {
+
+        return new String[]{SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_CORE_DIALECT,
+                SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_USER_DIALECT,
+                SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_ENTERPRISE_DIALECT};
     }
 
     /**
@@ -472,5 +474,26 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     @Override
     protected String getUserStoreDomainName() {
         return userStoreDomainName;
+    }
+
+    /**
+     * Gets the domain free username.
+     *
+     * @param nameWithDomain Username with domain.
+     * @return domainFreeName
+     */
+    private String extractDomainFreeName(String nameWithDomain) {
+
+        int domainSeparatorIdx = nameWithDomain.indexOf(UserCoreConstants.DOMAIN_SEPARATOR);
+        if (domainSeparatorIdx > 0) {
+            String[] names = nameWithDomain.split(UserCoreConstants.DOMAIN_SEPARATOR);
+            return names[1].trim();
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("Domain is not available for username: %s. Therefore returning the " +
+                        "original username.", nameWithDomain));
+            }
+            return nameWithDomain;
+        }
     }
 }

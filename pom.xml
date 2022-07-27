@@ -242,7 +242,7 @@
     <properties>
         <!--Carbon framework version-->
         <carbon.identity.framework.import.version.range>[5.0.0, 6.0.0)</carbon.identity.framework.import.version.range>
-        <identity.framework.version>5.5.0</identity.framework.version>
+        <identity.framework.version>5.21.37</identity.framework.version>
         <carbon.identity.framework.import.version.range>[5.0.0, 6.0.0)</carbon.identity.framework.import.version.range>
         <identity.inbound.provisioning.scim.version>5.1.3</identity.inbound.provisioning.scim.version>
         <identity.inbound.provisioning.scim.import.version.range>[5.0.0, 6.0.0)
@@ -254,14 +254,14 @@
         <osgi.framework.imp.pkg.version.range>[1.7.0, 2.0.0)</osgi.framework.imp.pkg.version.range>
         <osgi.service.component.imp.pkg.version.range>[1.2.0, 2.0.0)</osgi.service.component.imp.pkg.version.range>
         <!-- Charon version -->
-        <charon.wso2.version.identity>3.1.21</charon.wso2.version.identity>
+        <charon.wso2.version.identity>4.0.1</charon.wso2.version.identity>
         <charon.wso2.import.version.range>[3.0.0, 4.1.0)</charon.wso2.import.version.range>
         <!-- Commons -->
         <commons-lang.wso2.osgi.version.range>[2.6.0,3.0.0)</commons-lang.wso2.osgi.version.range>
         <commons-logging.osgi.version.range>[1.2,2.0)</commons-logging.osgi.version.range>
         <commons-collections.wso2.osgi.version.range>[3.2.0,4.0.0)</commons-collections.wso2.osgi.version.range>
         <commons-lang.wso2.version>2.6.0.wso2v1</commons-lang.wso2.version>
-        <identity.scim2.client.version>1.0.2</identity.scim2.client.version>
+        <identity.scim2.client.version>1.0.3</identity.scim2.client.version>
         <maven.buildnumber.plugin.version>1.4</maven.buildnumber.plugin.version>
         <maven.scr.plugin.version>1.7.2</maven.scr.plugin.version>
         <maven.bundle.plugin.version>3.2.0</maven.bundle.plugin.version>
