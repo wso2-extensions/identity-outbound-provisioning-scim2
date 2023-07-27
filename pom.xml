@@ -25,7 +25,7 @@
     <groupId>org.wso2.carbon.identity.outbound.provisioning.scim2</groupId>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>identity-outbound-provisioning-scim2</artifactId>
-    <version>2.0.3</version>
+    <version>2.0.4-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>WSO2 Carbon - SCIM 2.0 - Provisioning Module</name>
     <description>
@@ -48,7 +48,7 @@
          <url>https://github.com/wso2-extensions/identity-outbound-provisioning-scim2.git</url>
          <developerConnection>scm:git:https://github.com/wso2-extensions/identity-outbound-provisioning-scim2.git</developerConnection>
          <connection>scm:git:https://github.com/wso2-extensions/identity-outbound-provisioning-scim2.git</connection>
-         <tag>v2.0.3</tag>
+         <tag>HEAD</tag>
      </scm>
 
     <dependencyManagement>
