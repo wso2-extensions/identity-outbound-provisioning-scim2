@@ -1,0 +1,10 @@
+{
+    "name": "SCIM 2.0 Outbound Provisioning Connector",
+    "owner": "WSO2",
+    "category": "Provisioning connector",
+    "documentationUrl": "https://docs.wso2.com/display/IS530/Outbound+Provisioning+with+SCIM",
+    "description": "WSO2 Outbound provisioning is supported via SCIM 2.0 standard.",
+    "status": "Active",
+    "labels": [],
+    "releases": []
+}
