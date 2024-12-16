@@ -1,17 +1,19 @@
 /*
- * Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2018-2024, WSO2 LLC. (http://www.wso2.com).
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
  * You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package org.wso2.carbon.identity.provisioning.connector.scim2;
@@ -303,10 +305,9 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
      */
     private void updateGroup(ProvisioningEntity groupEntity) throws IdentityProvisioningException {
 
-        String oldGroupName = null;
+        String groupName = null;
         try {
             List<String> groupNames = getGroupNames(groupEntity.getAttributes());
-            String groupName = null;
             if (CollectionUtils.isNotEmpty(groupNames)) {
                 groupName = groupNames.get(0);
             }
@@ -315,13 +316,14 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             List<String> userList = getUserNames(groupEntity.getAttributes());
             setGroupMembers(group, userList);
 
-            oldGroupName = ProvisioningUtil.getAttributeValue(groupEntity,
+            String oldGroupName = ProvisioningUtil.getAttributeValue(groupEntity,
                     IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI);
             ProvisioningClient scimProvsioningClient;
             if (StringUtils.isEmpty(oldGroupName)) {
                 scimProvsioningClient = new ProvisioningClient(scimProvider, group, null);
             } else {
-                Map<String, Object> additionalInformation = new HashMap();
+                groupName = oldGroupName;
+                Map<String, Object> additionalInformation = new HashMap<>();
                 additionalInformation.put(SCIM2CommonConstants.IS_ROLE_NAME_CHANGED_ON_UPDATE, true);
                 additionalInformation.put(SCIM2CommonConstants.OLD_GROUP_NAME, oldGroupName);
                 scimProvsioningClient = new ProvisioningClient(scimProvider, group, additionalInformation);
@@ -330,7 +332,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                 scimProvsioningClient.provisionUpdateGroup();
             }
         } catch (Exception e) {
-            throw new IdentityProvisioningException("Error while updating group : " + oldGroupName, e);
+            throw new IdentityProvisioningException("Error while updating group : " + groupName, e);
         }
     }
 
