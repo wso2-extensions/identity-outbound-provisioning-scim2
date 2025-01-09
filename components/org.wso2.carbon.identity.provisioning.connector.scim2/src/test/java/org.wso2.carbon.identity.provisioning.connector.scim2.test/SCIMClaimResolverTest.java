@@ -17,26 +17,36 @@
 */
 package org.wso2.carbon.identity.provisioning.connector.scim2.test;
 
+import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIMClaimResolver;
+import org.wso2.carbon.identity.scim2.common.impl.IdentitySCIMManager;
+import org.wso2.charon3.core.extensions.UserManager;
 import org.wso2.charon3.core.schema.SCIMResourceSchemaManager;
 import org.wso2.charon3.core.schema.SCIMSchemaDefinitions;
 
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
+@PrepareForTest(IdentitySCIMManager.class)
 public class SCIMClaimResolverTest {
 
     private SCIMClaimResolver scimClaimResolver;
+    private IdentitySCIMManager identitySCIMManager;
+    private UserManager userManager;
 
     @BeforeMethod
     public void setUp() throws Exception {
 
         scimClaimResolver = new SCIMClaimResolver();
+        identitySCIMManager = Mockito.mock(IdentitySCIMManager.class);
+        userManager = Mockito.mock(UserManager.class);
         initMocks(this);
     }
 
@@ -57,6 +67,9 @@ public class SCIMClaimResolverTest {
     public void testGetResourceSchemaforUser() throws Exception {
 
         SCIMClaimResolver s = PowerMockito.spy(scimClaimResolver);
+        PowerMockito.mockStatic(IdentitySCIMManager.class);
+        when(IdentitySCIMManager.getInstance()).thenReturn(identitySCIMManager);
+        when(identitySCIMManager.getUserManager()).thenReturn(userManager);
         Assert.assertEquals(Whitebox.invokeMethod(s, "getResourceSchema", 1),
                 SCIMResourceSchemaManager.getInstance().getUserResourceSchema());
     }

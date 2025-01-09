@@ -84,6 +84,11 @@
                 <version>${identity.framework.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.wso2.carbon.identity.framework</groupId>
+                <artifactId>org.wso2.carbon.identity.role.v2.mgt.core</artifactId>
+                <version>${identity.framework.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.wso2.carbon</groupId>
                 <artifactId>org.wso2.carbon.user.core</artifactId>
                 <version>${carbon.kernel.version}</version>
@@ -127,6 +132,11 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.inbound.provisioning.scim2</groupId>
+                <artifactId>org.wso2.carbon.identity.scim2.common</artifactId>
+                <version>${identity.inbound.provisioning.scim2.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -309,10 +319,13 @@
     <properties>
         <!--Carbon framework version-->
         <carbon.identity.framework.import.version.range>[5.0.0, 8.0.0)</carbon.identity.framework.import.version.range>
-        <identity.framework.version>5.21.37</identity.framework.version>
+        <identity.framework.version>7.0.78</identity.framework.version>
         <identity.inbound.provisioning.scim.version>5.1.3</identity.inbound.provisioning.scim.version>
         <identity.inbound.provisioning.scim.import.version.range>[5.0.0, 6.0.0)
         </identity.inbound.provisioning.scim.import.version.range>
+        <identity.inbound.provisioning.scim2.version>3.4.67</identity.inbound.provisioning.scim2.version>
+        <identity.inbound.provisioning.scim2.import.version.range>[3.0.0, 4.0.0)
+        </identity.inbound.provisioning.scim2.import.version.range>
         <identity.outbound.provisioning.scim2.export.version>${project.version}
         </identity.outbound.provisioning.scim2.export.version>
         <!-- Carbon kernel version -->
@@ -320,7 +333,7 @@
         <osgi.framework.imp.pkg.version.range>[1.7.0, 2.0.0)</osgi.framework.imp.pkg.version.range>
         <osgi.service.component.imp.pkg.version.range>[1.2.0, 2.0.0)</osgi.service.component.imp.pkg.version.range>
         <!-- Charon version -->
-        <charon.wso2.version.identity>4.0.1</charon.wso2.version.identity>
+        <charon.wso2.version.identity>4.0.17</charon.wso2.version.identity>
         <charon.wso2.import.version.range>[3.0.0, 4.1.0)</charon.wso2.import.version.range>
         <!-- Commons -->
         <commons-lang.wso2.osgi.version.range>[2.6.0,3.0.0)</commons-lang.wso2.osgi.version.range>
