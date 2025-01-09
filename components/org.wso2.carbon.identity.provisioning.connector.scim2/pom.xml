@@ -88,6 +88,10 @@
 			<artifactId>org.wso2.carbon.identity.application.common</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.wso2.carbon.identity.inbound.provisioning.scim2</groupId>
+			<artifactId>org.wso2.carbon.identity.scim2.common</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.jacoco</groupId>
 			<artifactId>org.jacoco.agent</artifactId>
 			<classifier>runtime</classifier>
@@ -113,6 +117,11 @@
 			<groupId>org.powermock</groupId>
 			<artifactId>powermock-module-testng</artifactId>
 			<version>${powermock.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.wso2.carbon.identity.framework</groupId>
+			<artifactId>org.wso2.carbon.identity.role.v2.mgt.core</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -204,6 +213,10 @@
 							org.osgi.service.component; version="${osgi.service.component.imp.pkg.version.range}",
 							org.wso2.carbon.identity.application.common.model;
 							version="${carbon.identity.framework.import.version.range}",
+							org.wso2.carbon.identity.scim2.common.impl;
+							version="${identity.inbound.provisioning.scim2.import.version.range}",
+							org.wso2.carbon.identity.scim2.common.utils;
+							version="${identity.inbound.provisioning.scim2.import.version.range}",
 							org.wso2.carbon.identity.provisioning;
 							version="${carbon.identity.framework.import.version.range}",
 							org.wso2.charon3.core.*; version="${charon.wso2.import.version.range}",
