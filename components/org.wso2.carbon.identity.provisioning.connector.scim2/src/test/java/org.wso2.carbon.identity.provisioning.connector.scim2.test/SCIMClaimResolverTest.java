@@ -29,6 +29,7 @@ import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIMClaimResol
 import org.wso2.carbon.identity.scim2.common.impl.IdentitySCIMManager;
 import org.wso2.charon3.core.extensions.UserManager;
 import org.wso2.charon3.core.schema.SCIMResourceSchemaManager;
+import org.wso2.charon3.core.schema.SCIMResourceTypeSchema;
 import org.wso2.charon3.core.schema.SCIMSchemaDefinitions;
 
 import static org.mockito.Mockito.when;
@@ -70,7 +71,11 @@ public class SCIMClaimResolverTest {
         PowerMockito.mockStatic(IdentitySCIMManager.class);
         when(IdentitySCIMManager.getInstance()).thenReturn(identitySCIMManager);
         when(identitySCIMManager.getUserManager()).thenReturn(userManager);
-        Assert.assertEquals(Whitebox.invokeMethod(s, "getResourceSchema", 1),
-                SCIMResourceSchemaManager.getInstance().getUserResourceSchema());
+        SCIMResourceTypeSchema expectedSchema = Whitebox.invokeMethod(s, "getResourceSchema", 1);
+        SCIMResourceTypeSchema actualSchema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+        Assert.assertEquals(actualSchema.getSchemasList(), expectedSchema.getSchemasList(),
+                "Expected and actual SCIM resource schemas for user do not match.");
+        Assert.assertEquals(actualSchema.getAttributesList(), expectedSchema.getAttributesList(),
+                "Expected and actual SCIM resource attributes for user do not match.");
     }
 }
