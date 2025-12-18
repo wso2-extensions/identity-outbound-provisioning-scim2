@@ -17,15 +17,10 @@
 */
 package org.wso2.carbon.identity.provisioning.connector.scim2.test;
 
+import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.testng.PowerMockTestCase;
-import org.powermock.reflect.Whitebox;
-import org.testng.IObjectFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.ObjectFactory;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.Property;
@@ -37,26 +32,18 @@ import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningCo
 import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningConnectorConstants;
 import org.wso2.charon3.core.objects.Group;
 import org.wso2.charon3.core.objects.User;
-import org.wso2.charon3.core.utils.codeutils.PatchOperation;
 import org.wso2.scim2.client.ProvisioningClient;
 import org.wso2.scim2.client.SCIMProvider;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@PrepareForTest({PatchOperation.class, SCIM2ProvisioningConnector.class, SCIMProvider.class})
-public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
-
-    @ObjectFactory
-    public IObjectFactory getObjectFactory() {
-
-        return new org.powermock.modules.testng.PowerMockObjectFactory();
-    }
+public class SCIM2ProvisioningConnectorTest {
 
     private SCIM2ProvisioningConnector sCIM2ProvisioningConnector;
-    private ProvisioningClient provisioningClient;
     private SCIMProvider scimProvider;
 
     @BeforeMethod
@@ -64,7 +51,6 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
 
         sCIM2ProvisioningConnector = new SCIM2ProvisioningConnector();
         scimProvider = Mockito.mock(SCIMProvider.class);
-        provisioningClient = Mockito.mock(ProvisioningClient.class);
     }
 
     @AfterMethod
@@ -75,129 +61,138 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
     @Test
     public void testGetConnectorType() throws Exception {
 
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "getUserStoreDomainName");
+        Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("getUserStoreDomainName");
+        method.setAccessible(true);
+        method.invoke(sCIM2ProvisioningConnector);
     }
 
     @Test
     public void testCreateUser() throws Exception {
 
-        PowerMockito.when(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
-                SCIM2_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
-        sCIM2ProvisioningConnector.init(new Property[0]);
-        PowerMockito.whenNew(ProvisioningClient.class).withArguments(Mockito.anyObject(), Mockito.anyObject(),
-                Mockito.anyObject()).thenReturn(provisioningClient);
-        PowerMockito.whenNew(SCIMProvider.class).withNoArguments().thenReturn(scimProvider);
-        Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
-        List<String> value = new ArrayList<String>();
-        value.add("testUser");
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.USERNAME_CLAIM_URI,null,null,
-                false), value);
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.PASSWORD_CLAIM_URI,null,null,
-                false), value);
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI,null,null,
-                false), null);
-        ProvisioningEntity userEntity = new ProvisioningEntity(ProvisioningEntityType.USER, ProvisioningOperation.POST,
-                attributes);
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "createUser",userEntity);
+        try (MockedConstruction<ProvisioningClient> mocked = Mockito.mockConstruction(ProvisioningClient.class)) {
+            Mockito.when(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
+                    SCIM2_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
+            sCIM2ProvisioningConnector.init(new Property[0]);
+            Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
+            List<String> value = new ArrayList<String>();
+            value.add("testUser");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.USERNAME_CLAIM_URI,null,null,
+                    false), value);
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.PASSWORD_CLAIM_URI,null,null,
+                    false), value);
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI,null,null,
+                    false), null);
+            ProvisioningEntity userEntity = new ProvisioningEntity(ProvisioningEntityType.USER, ProvisioningOperation.POST,
+                    attributes);
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("createUser", ProvisioningEntity.class);
+            method.setAccessible(true);
+            method.invoke(sCIM2ProvisioningConnector, userEntity);
+        }
     }
 
     @Test
     public void testUpdateUser() throws Exception {
 
-        PowerMockito.when(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
-                SCIM2_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
-        sCIM2ProvisioningConnector.init(new Property[0]);
-        PowerMockito.whenNew(ProvisioningClient.class).withArguments(Mockito.anyObject(), Mockito.anyObject(),
-                Mockito.anyObject()).thenReturn(provisioningClient);
-        PowerMockito.whenNew(SCIMProvider.class).withNoArguments().thenReturn(scimProvider);
-        Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
-        List<String> value = new ArrayList<String>();
-        value.add("testUser");
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.USERNAME_CLAIM_URI,null,null,
-                false), value);
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.PASSWORD_CLAIM_URI,null,null,
-                false), value);
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI,null,null,
-                false), null);
-        ProvisioningEntity userEntity = new ProvisioningEntity(ProvisioningEntityType.USER, ProvisioningOperation.PUT,
-                attributes);
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "updateUser",userEntity,ProvisioningOperation.PUT);
+        try (MockedConstruction<ProvisioningClient> mocked = Mockito.mockConstruction(ProvisioningClient.class)) {
+            Mockito.when(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
+                    SCIM2_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
+            sCIM2ProvisioningConnector.init(new Property[0]);
+            Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
+            List<String> value = new ArrayList<String>();
+            value.add("testUser");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.USERNAME_CLAIM_URI,null,null,
+                    false), value);
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.PASSWORD_CLAIM_URI,null,null,
+                    false), value);
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI,null,null,
+                    false), null);
+            ProvisioningEntity userEntity = new ProvisioningEntity(ProvisioningEntityType.USER, ProvisioningOperation.PUT,
+                    attributes);
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("updateUser", ProvisioningEntity.class,
+                    ProvisioningOperation.class);
+            method.setAccessible(true);
+            method.invoke(sCIM2ProvisioningConnector, userEntity, ProvisioningOperation.PUT);
+        }
     }
 
     @Test
     public void testDeleteUser() throws Exception {
 
-        PowerMockito.when(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
-                SCIM2_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
-        sCIM2ProvisioningConnector.init(new Property[0]);
-        PowerMockito.whenNew(ProvisioningClient.class).withArguments(Mockito.anyObject(), Mockito.anyObject(),
-                Mockito.anyObject()).thenReturn(provisioningClient);
-        PowerMockito.whenNew(SCIMProvider.class).withNoArguments().thenReturn(scimProvider);
-        Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
-        List<String> value = new ArrayList<String>();
-        value.add("testUser");
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.USERNAME_CLAIM_URI,null,null,
-                false), value);
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.PASSWORD_CLAIM_URI,null,null,
-                false), value);
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI,null,null,
-                false), null);
-        ProvisioningEntity userEntity = new ProvisioningEntity(ProvisioningEntityType.USER, ProvisioningOperation.
-                DELETE, attributes);
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "deleteUser",userEntity);
+        try (MockedConstruction<ProvisioningClient> mocked = Mockito.mockConstruction(ProvisioningClient.class)) {
+            Mockito.when(scimProvider.getProperty(SCIM2ProvisioningConnectorConstants.
+                    SCIM2_ENABLE_PASSWORD_PROVISIONING)).thenReturn("true");
+            sCIM2ProvisioningConnector.init(new Property[0]);
+            Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
+            List<String> value = new ArrayList<String>();
+            value.add("testUser");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.USERNAME_CLAIM_URI,null,null,
+                    false), value);
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.PASSWORD_CLAIM_URI,null,null,
+                    false), value);
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI,null,null,
+                    false), null);
+            ProvisioningEntity userEntity = new ProvisioningEntity(ProvisioningEntityType.USER, ProvisioningOperation.
+                    DELETE, attributes);
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("deleteUser", ProvisioningEntity.class);
+            method.setAccessible(true);
+            method.invoke(sCIM2ProvisioningConnector, userEntity);
+        }
     }
 
     @Test
     public void testCreateGroup() throws Exception {
 
-        sCIM2ProvisioningConnector.init(new Property[0]);
-        PowerMockito.whenNew(ProvisioningClient.class).withArguments(Mockito.anyObject(), Mockito.anyObject(),
-                Mockito.anyObject()).thenReturn(provisioningClient);
-        PowerMockito.whenNew(SCIMProvider.class).withNoArguments().thenReturn(scimProvider);
-        Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
-        List<String> value = new ArrayList<String>();
-        value.add("testGroup");
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI,null,null,
-                false), value);
-        ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP, ProvisioningOperation.
-                POST,attributes);
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "createGroup",groupEntity);
+        try (MockedConstruction<ProvisioningClient> mocked = Mockito.mockConstruction(ProvisioningClient.class)) {
+            sCIM2ProvisioningConnector.init(new Property[0]);
+            Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
+            List<String> value = new ArrayList<String>();
+            value.add("testGroup");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI,null,null,
+                    false), value);
+            ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP, ProvisioningOperation.
+                    POST,attributes);
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("createGroup", ProvisioningEntity.class);
+            method.setAccessible(true);
+            method.invoke(sCIM2ProvisioningConnector, groupEntity);
+        }
     }
 
     @Test
     public void testUpdateGroup() throws Exception {
 
-        sCIM2ProvisioningConnector.init(new Property[0]);
-        PowerMockito.whenNew(ProvisioningClient.class).withArguments(Mockito.anyObject(), Mockito.anyObject(),
-                Mockito.anyObject()).thenReturn(provisioningClient);
-        PowerMockito.whenNew(SCIMProvider.class).withNoArguments().thenReturn(scimProvider);
-        Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
-        List<String> value = new ArrayList<String>();
-        value.add("testGroup");
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI,null,null,
-                false), value);
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.NEW_GROUP_NAME_CLAIM_URI,null,null,
-                false), value);
-        ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP, ProvisioningOperation.
-                PUT,attributes);
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "updateGroup",groupEntity);
+        try (MockedConstruction<ProvisioningClient> mocked = Mockito.mockConstruction(ProvisioningClient.class)) {
+            sCIM2ProvisioningConnector.init(new Property[0]);
+            Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
+            List<String> value = new ArrayList<String>();
+            value.add("testGroup");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI,null,null,
+                    false), value);
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.NEW_GROUP_NAME_CLAIM_URI,null,null,
+                    false), value);
+            ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP, ProvisioningOperation.
+                    PUT,attributes);
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("updateGroup", ProvisioningEntity.class);
+            method.setAccessible(true);
+            method.invoke(sCIM2ProvisioningConnector, groupEntity);
+        }
     }
 
     @Test
     public void testDeleteGroup() throws Exception {
 
-        sCIM2ProvisioningConnector.init(new Property[0]);
-        PowerMockito.whenNew(ProvisioningClient.class).withArguments(Mockito.anyObject(), Mockito.anyObject(),
-                Mockito.anyObject()).thenReturn(provisioningClient);
-        PowerMockito.whenNew(SCIMProvider.class).withNoArguments().thenReturn(scimProvider);
-        Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
-        List<String> value = new ArrayList<String>();
-        value.add("testGroup");
-        attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI,null,null,
-                false), value);
-        ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP, ProvisioningOperation.
-                DELETE,attributes);
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "deleteGroup",groupEntity);
+        try (MockedConstruction<ProvisioningClient> mocked = Mockito.mockConstruction(ProvisioningClient.class)) {
+            sCIM2ProvisioningConnector.init(new Property[0]);
+            Map<ClaimMapping, List<String>> attributes = new HashMap<ClaimMapping, List<String>>();
+            List<String> value = new ArrayList<String>();
+            value.add("testGroup");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI,null,null,
+                    false), value);
+            ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP, ProvisioningOperation.
+                    DELETE,attributes);
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("deleteGroup", ProvisioningEntity.class);
+            method.setAccessible(true);
+            method.invoke(sCIM2ProvisioningConnector, groupEntity);
+        }
     }
 
     @Test
@@ -207,7 +202,10 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
         Property property = new Property();
         property.setName(SCIM2ProvisioningConnectorConstants.SCIM2_USERNAME);
         property.setValue("testUser");
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "populateSCIMProvider",property,
+        Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("populateSCIMProvider", Property.class,
+                String.class);
+        method.setAccessible(true);
+        method.invoke(sCIM2ProvisioningConnector, property,
                 SCIM2ProvisioningConnectorConstants.SCIM2_USERNAME);
     }
 
@@ -216,7 +214,9 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
 
         User user = new User();
         user.setUserName("testUser");
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "setPassword",user, "testPassword");
+        Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("setPassword", User.class, String.class);
+        method.setAccessible(true);
+        method.invoke(sCIM2ProvisioningConnector, user, "testPassword");
     }
 
     @Test
@@ -236,7 +236,10 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
                 false), null);
         ProvisioningEntity userEntity = new ProvisioningEntity(ProvisioningEntityType.USER, ProvisioningOperation.
                 POST, attributes);
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "setUserPassword",user, userEntity);
+        Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("setUserPassword", User.class,
+                ProvisioningEntity.class);
+        method.setAccessible(true);
+        method.invoke(sCIM2ProvisioningConnector, user, userEntity);
     }
 
     @Test
@@ -245,7 +248,9 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
         sCIM2ProvisioningConnector.init(new Property[0]);
         Group group = new Group();
         group.setDisplayName("testGroup");
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "setMember",group, "testUser");
+        Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("setMember", Group.class, String.class);
+        method.setAccessible(true);
+        method.invoke(sCIM2ProvisioningConnector, group, "testUser");
     }
 
     @Test
@@ -256,6 +261,9 @@ public class SCIM2ProvisioningConnectorTest extends PowerMockTestCase {
         group.setDisplayName("testGroup");
         List<String> userList = new ArrayList<>();
         userList.add("testUser");
-        Whitebox.invokeMethod(sCIM2ProvisioningConnector, "setGroupMembers",group, userList);
+        Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("setGroupMembers", Group.class,
+                List.class);
+        method.setAccessible(true);
+        method.invoke(sCIM2ProvisioningConnector, group, userList);
     }
 }
