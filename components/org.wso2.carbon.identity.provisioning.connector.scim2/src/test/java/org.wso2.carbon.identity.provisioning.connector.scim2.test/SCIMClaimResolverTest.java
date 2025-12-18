@@ -17,10 +17,8 @@
 */
 package org.wso2.carbon.identity.provisioning.connector.scim2.test;
 
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -32,10 +30,8 @@ import org.wso2.charon3.core.schema.SCIMResourceSchemaManager;
 import org.wso2.charon3.core.schema.SCIMResourceTypeSchema;
 import org.wso2.charon3.core.schema.SCIMSchemaDefinitions;
 
-import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-@PrepareForTest(IdentitySCIMManager.class)
 public class SCIMClaimResolverTest {
 
     private SCIMClaimResolver scimClaimResolver;
@@ -57,25 +53,31 @@ public class SCIMClaimResolverTest {
     }
 
     @Test
-    public void testGetResourceSchemaforGroup() throws Exception {
+    public void testGetResourceSchemaForGroup() throws Exception {
 
-        SCIMClaimResolver s = PowerMockito.spy(scimClaimResolver);
-        Assert.assertEquals(Whitebox.invokeMethod(s, "getResourceSchema", 2),
-                SCIMSchemaDefinitions.SCIM_GROUP_SCHEMA);
+        SCIMClaimResolver s = Mockito.spy(scimClaimResolver);
+        java.lang.reflect.Method method = SCIMClaimResolver.class.getDeclaredMethod("getResourceSchema", int.class);
+        method.setAccessible(true);
+        SCIMResourceTypeSchema schema = (SCIMResourceTypeSchema) method.invoke(s, 2);
+        Assert.assertEquals(schema, SCIMSchemaDefinitions.SCIM_GROUP_SCHEMA);
     }
 
     @Test
-    public void testGetResourceSchemaforUser() throws Exception {
+    public void testGetResourceSchemaForUser() throws Exception {
 
-        SCIMClaimResolver s = PowerMockito.spy(scimClaimResolver);
-        PowerMockito.mockStatic(IdentitySCIMManager.class);
-        when(IdentitySCIMManager.getInstance()).thenReturn(identitySCIMManager);
-        when(identitySCIMManager.getUserManager()).thenReturn(userManager);
-        SCIMResourceTypeSchema expectedSchema = Whitebox.invokeMethod(s, "getResourceSchema", 1);
-        SCIMResourceTypeSchema actualSchema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
-        Assert.assertEquals(actualSchema.getSchemasList(), expectedSchema.getSchemasList(),
-                "Expected and actual SCIM resource schemas for user do not match.");
-        Assert.assertEquals(actualSchema.getAttributesList(), expectedSchema.getAttributesList(),
-                "Expected and actual SCIM resource attributes for user do not match.");
+        SCIMClaimResolver s = Mockito.spy(scimClaimResolver);
+        try (MockedStatic<IdentitySCIMManager> mockedStatic = Mockito.mockStatic(IdentitySCIMManager.class)) {
+            mockedStatic.when(IdentitySCIMManager::getInstance).thenReturn(identitySCIMManager);
+            Mockito.when(identitySCIMManager.getUserManager()).thenReturn(userManager);
+
+            java.lang.reflect.Method method = SCIMClaimResolver.class.getDeclaredMethod("getResourceSchema", int.class);
+            method.setAccessible(true);
+            SCIMResourceTypeSchema expectedSchema = (SCIMResourceTypeSchema) method.invoke(s, 1);
+            SCIMResourceTypeSchema actualSchema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            Assert.assertEquals(actualSchema.getSchemasList(), expectedSchema.getSchemasList(),
+                    "Expected and actual SCIM resource schemas for user do not match.");
+            Assert.assertEquals(actualSchema.getAttributesList(), expectedSchema.getAttributesList(),
+                    "Expected and actual SCIM resource attributes for user do not match.");
+        }
     }
 }
