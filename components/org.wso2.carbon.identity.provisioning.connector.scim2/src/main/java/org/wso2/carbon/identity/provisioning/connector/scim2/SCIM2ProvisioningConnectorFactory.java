@@ -18,6 +18,7 @@ package org.wso2.carbon.identity.provisioning.connector.scim2;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.osgi.annotation.bundle.Capability;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.SubProperty;
 import org.wso2.carbon.identity.provisioning.AbstractOutboundProvisioningConnector;
@@ -30,6 +31,13 @@ import java.util.List;
 /**
  * This class creates the SCIM2 connection factory.
  */
+@Capability(
+        namespace = "osgi.service",
+        attribute = {
+                "objectClass=org.wso2.carbon.identity.provisioning.AbstractProvisioningConnectorFactory",
+                "service.scope=singleton"
+        }
+)
 public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConnectorFactory {
 
     public static final String SCIM2 = "SCIM2";
