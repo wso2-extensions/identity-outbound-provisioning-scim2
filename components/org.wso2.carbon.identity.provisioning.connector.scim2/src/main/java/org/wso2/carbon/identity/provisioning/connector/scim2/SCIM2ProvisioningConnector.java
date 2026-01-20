@@ -363,6 +363,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
         return new String[]{SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_CORE_DIALECT,
                 SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_USER_DIALECT,
                 SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_ENTERPRISE_DIALECT,
+                SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_WSO2_DIALECT,
                 SCIMCommonUtils.getCustomSchemaURI()};
     }
 
