@@ -31,6 +31,7 @@ import org.wso2.carbon.identity.provisioning.ProvisioningEntityType;
 import org.wso2.carbon.identity.provisioning.ProvisioningOperation;
 import org.wso2.carbon.identity.provisioning.ProvisioningUtil;
 import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIMClaimResolver;
+import org.wso2.carbon.identity.scim2.common.utils.AttributeMapper;
 import org.wso2.carbon.identity.scim2.common.utils.SCIMCommonUtils;
 import org.wso2.carbon.user.core.UserCoreConstants;
 import org.wso2.carbon.user.core.UserStoreException;
@@ -172,15 +173,16 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             if (CollectionUtils.isNotEmpty(userNames)) {
                 userName = userNames.get(0);
             }
-            // get single-valued claims
+            // Get single-valued claims.
             Map<String, String> singleValued = getSingleValuedClaims(userEntity.getAttributes());
-            // if user created through management console, claim values are not present.
-            User user = (User) SCIMClaimResolver.constructSCIMObjectFromAttributes(singleValued, 1);
+            // Use AttributeMapper from inbound provisioning (same logic used in SCIM2 inbound provisioning).
+            User user = (User) AttributeMapper.constructSCIMObjectFromAttributes(singleValued,
+                    SCIM2CommonConstants.USER);
             user.setUserName(userName);
             setUserPassword(user, userEntity);
 
-            ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, user, null);
-            scimProvsioningClient.provisionCreateUser();
+            ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, user, null);
+            scimProvisioningClient.provisionCreateUser();
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while creating the user : " + userName, e);
         }
