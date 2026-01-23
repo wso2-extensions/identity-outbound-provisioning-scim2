@@ -33,7 +33,6 @@ import org.wso2.carbon.identity.provisioning.ProvisioningEntityType;
 import org.wso2.carbon.identity.provisioning.ProvisioningOperation;
 import org.wso2.carbon.identity.provisioning.ProvisioningUtil;
 import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIM2ConnectorUtil;
-import org.wso2.carbon.identity.scim2.common.utils.AttributeMapper;
 import org.wso2.carbon.identity.scim2.common.utils.SCIMCommonUtils;
 import org.wso2.carbon.user.core.UserCoreConstants;
 import org.wso2.carbon.user.core.UserStoreException;
@@ -186,9 +185,14 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             }
             // Get single-valued claims.
             Map<String, String> singleValued = getSingleValuedClaims(userEntity.getAttributes());
-            // Use AttributeMapper from inbound provisioning (same logic used in SCIM2 inbound provisioning).
-            User user = (User) AttributeMapper.constructSCIMObjectFromAttributes(singleValued,
-                    SCIM2CommonConstants.USER);
+            if (MapUtils.isEmpty(singleValued)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Skipping user provisioning. No claims found for user: " +
+                            SCIM2ConnectorUtil.maskIfRequired(userName));
+                }
+                return;
+            }
+            User user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
             user.setUserName(userName);
             setUserPassword(user, userEntity);
 
@@ -242,6 +246,13 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
             // Get single-valued claims.
             Map<String, String> singleValued = getSingleValuedClaims(userEntity.getAttributes());
+            if (MapUtils.isEmpty(singleValued)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Skipping user provisioning. No claims found for user: " +
+                            SCIM2ConnectorUtil.maskIfRequired(userName));
+                }
+                return;
+            }
 
             // Determine whether to use PATCH based on configuration.
             boolean shouldUsePatch = ProvisioningOperation.PATCH.equals(provisioningOperation) ||
@@ -251,8 +262,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             if (shouldUsePatch) {
                 // For PATCH operation, construct User object and convert its attributes to patch operations.
                 if (MapUtils.isNotEmpty(singleValued)) {
-                    user = (User) AttributeMapper.constructSCIMObjectFromAttributes(singleValued,
-                            SCIM2CommonConstants.USER);
+                    user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
                 } else {
                     user = new User();
                 }
@@ -274,8 +284,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             } else if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
                 // For PUT operation (when PATCH is disabled), construct full User object.
                 if (MapUtils.isNotEmpty(singleValued)) {
-                    user = (User) AttributeMapper.constructSCIMObjectFromAttributes(singleValued,
-                            SCIM2CommonConstants.USER);
+                    user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
                 } else {
                     user = new User();
                 }
@@ -409,7 +418,6 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
         return new String[]{SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_CORE_DIALECT,
                 SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_USER_DIALECT,
                 SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_ENTERPRISE_DIALECT,
-                SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_WSO2_DIALECT,
                 SCIMCommonUtils.getCustomSchemaURI()};
     }
 

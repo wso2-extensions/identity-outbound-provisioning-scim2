@@ -34,7 +34,6 @@ public class SCIM2ProvisioningConnectorConstants {
     public static final String DEFAULT_SCIM2_CORE_DIALECT = "urn:ietf:params:scim:schemas:core:2.0";
     public static final String DEFAULT_SCIM2_USER_DIALECT = "urn:ietf:params:scim:schemas:core:2.0:User";
     public static final String DEFAULT_SCIM2_ENTERPRISE_DIALECT = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User";
-    public static final String DEFAULT_SCIM2_WSO2_DIALECT = "urn:scim:wso2:schema";
 
     public static final String SCIM2_ENABLE_PASSWORD_PROVISIONING = "scim2-enable-pwd-provisioning";
     public static final String SCIM2_DEFAULT_PASSWORD = "scim2-default-pwd";

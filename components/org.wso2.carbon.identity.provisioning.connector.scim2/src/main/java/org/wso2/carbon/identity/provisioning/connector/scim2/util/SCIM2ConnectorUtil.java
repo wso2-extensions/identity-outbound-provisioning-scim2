@@ -26,12 +26,19 @@ import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.provisioning.IdentityProvisioningConstants;
 import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningConnectorConstants;
+import org.wso2.carbon.identity.scim2.common.impl.IdentitySCIMManager;
+import org.wso2.carbon.identity.scim2.common.utils.AttributeMapper;
 import org.wso2.carbon.identity.scim2.common.utils.SCIMCommonUtils;
+import org.wso2.scim2.util.SCIM2CommonConstants;
 import org.wso2.charon3.core.attributes.Attribute;
 import org.wso2.charon3.core.attributes.ComplexAttribute;
 import org.wso2.charon3.core.attributes.MultiValuedAttribute;
 import org.wso2.charon3.core.attributes.SimpleAttribute;
 import org.wso2.charon3.core.encoder.JSONEncoder;
+import org.wso2.charon3.core.exceptions.BadRequestException;
+import org.wso2.charon3.core.exceptions.CharonException;
+import org.wso2.charon3.core.exceptions.NotFoundException;
+import org.wso2.charon3.core.extensions.UserManager;
 import org.wso2.charon3.core.objects.User;
 import org.wso2.charon3.core.schema.SCIMConstants;
 import org.wso2.charon3.core.utils.codeutils.PatchOperation;
@@ -127,7 +134,6 @@ public class SCIM2ConnectorUtil {
         // First check against registered extension dialect URIs.
         String[] extensionDialectUris = {
                 SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_ENTERPRISE_DIALECT,
-                SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_WSO2_DIALECT,
                 SCIMCommonUtils.getCustomSchemaURI()
         };
 
@@ -229,5 +235,22 @@ public class SCIM2ConnectorUtil {
     public static String maskIfRequired(String value) {
 
         return LoggerUtils.isLogMaskingEnable ? LoggerUtils.getMaskedContent(value) : value;
+    }
+
+    /**
+     * Constructs a SCIM User object from the given attribute map.
+     *
+     * @param attributes Map of attribute URIs to values.
+     * @return User object with attributes populated from the map.
+     * @throws CharonException     If there's an error in Charon processing.
+     * @throws BadRequestException If the attributes are invalid.
+     * @throws NotFoundException   If required resources are not found.
+     */
+    public static User constructUserFromAttributes(Map<String, String> attributes)
+            throws CharonException, BadRequestException, NotFoundException {
+
+        UserManager userManager = IdentitySCIMManager.getInstance().getUserManager();
+        return (User) AttributeMapper.constructSCIMObjectFromAttributes(userManager, attributes,
+                SCIM2CommonConstants.USER);
     }
 }
