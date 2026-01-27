@@ -328,7 +328,7 @@
     <properties>
         <!--Carbon framework version-->
         <carbon.identity.framework.import.version.range>[5.0.0, 8.0.0)</carbon.identity.framework.import.version.range>
-        <identity.framework.version>7.8.656</identity.framework.version>
+        <identity.framework.version>7.8.667</identity.framework.version>
         <identity.inbound.provisioning.scim.version>5.1.3</identity.inbound.provisioning.scim.version>
         <identity.inbound.provisioning.scim.import.version.range>[5.0.0, 6.0.0)
         </identity.inbound.provisioning.scim.import.version.range>

@@ -41,4 +41,15 @@ public class SCIM2ProvisioningConnectorConstants {
     public static final String DEFAULT = "default";
     public static final String ATTRIBUTE_TYPE = ".type";
     public static final String ATTRIBUTE_VALUE = ".value";
+
+    public static final String SCIM2_CLIENT_HTTP_RETRY_COUNT = "OutboundProvisioning.SCIM2Client.HttpRetryCount";
+    public static final String SCIM2_CLIENT_HTTP_READ_TIMEOUT = "OutboundProvisioning.SCIM2Client.HttpReadTimeout";
+    public static final String SCIM2_CLIENT_HTTP_CONNECTION_TIMEOUT =
+            "OutboundProvisioning.SCIM2Client.HttpConnectionTimeout";
+    public static final String SCIM2_CLIENT_HTTP_CONNECTION_REQUEST_TIMEOUT =
+            "OutboundProvisioning.SCIM2Client.HttpConnectionRequestTimeout";
+    public static final String SCIM2_CLIENT_HTTP_CONNECTION_POOL_SIZE =
+            "OutboundProvisioning.SCIM2Client.HttpConnectionPoolSize";
+    public static final String SCIM2_CLIENT_NIO_THREAD_COUNT =
+            "OutboundProvisioning.SCIM2Client.NioThreadCount";
 }
