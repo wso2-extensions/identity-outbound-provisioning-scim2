@@ -39,7 +39,6 @@ public class SCIM2ClientConfigRegistrar {
     private static final int DEFAULT_HTTP_CONNECTION_TIMEOUT_IN_MILLIS = 2000;
     private static final int DEFAULT_HTTP_CONNECTION_REQUEST_TIMEOUT_IN_MILLIS = 2000;
     private static final int DEFAULT_HTTP_CONNECTION_POOL_SIZE = 20;
-    private static final int DEFAULT_NIO_THREAD_COUNT = 4;
 
     private SCIM2ClientConfigRegistrar() {
         // Private constructor to prevent instantiation.
@@ -78,12 +77,6 @@ public class SCIM2ClientConfigRegistrar {
                     SCIM2ProvisioningConnectorConstants.SCIM2_CLIENT_HTTP_CONNECTION_POOL_SIZE),
                     DEFAULT_HTTP_CONNECTION_POOL_SIZE);
             clientConfig.registerConnectionPoolConfig(poolSize);
-
-            // Register NIO thread count configuration.
-            int nioThreadCount = parseInt(IdentityUtil.getProperty(
-                    SCIM2ProvisioningConnectorConstants.SCIM2_CLIENT_NIO_THREAD_COUNT),
-                    DEFAULT_NIO_THREAD_COUNT);
-            clientConfig.registerNioThreadCountConfig(nioThreadCount);
 
             if (log.isDebugEnabled()) {
                 log.debug("Successfully registered SCIM2 client configurations from identity.xml");
