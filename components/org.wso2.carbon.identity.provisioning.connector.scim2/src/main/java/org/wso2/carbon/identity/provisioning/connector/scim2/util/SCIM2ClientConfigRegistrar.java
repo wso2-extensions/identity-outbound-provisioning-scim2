@@ -38,7 +38,6 @@ public class SCIM2ClientConfigRegistrar {
     private static final int DEFAULT_HTTP_READ_TIMEOUT_IN_MILLIS = 5000;
     private static final int DEFAULT_HTTP_CONNECTION_TIMEOUT_IN_MILLIS = 2000;
     private static final int DEFAULT_HTTP_CONNECTION_REQUEST_TIMEOUT_IN_MILLIS = 2000;
-    private static final int DEFAULT_HTTP_CONNECTION_POOL_SIZE = 20;
 
     private SCIM2ClientConfigRegistrar() {
         // Private constructor to prevent instantiation.
@@ -71,12 +70,6 @@ public class SCIM2ClientConfigRegistrar {
                     SCIM2ProvisioningConnectorConstants.SCIM2_CLIENT_HTTP_CONNECTION_REQUEST_TIMEOUT),
                     DEFAULT_HTTP_CONNECTION_REQUEST_TIMEOUT_IN_MILLIS);
             clientConfig.registerTimeoutConfig(readTimeout, connectionTimeout, connectionRequestTimeout);
-
-            // Register connection pool configuration.
-            int poolSize = parseInt(IdentityUtil.getProperty(
-                    SCIM2ProvisioningConnectorConstants.SCIM2_CLIENT_HTTP_CONNECTION_POOL_SIZE),
-                    DEFAULT_HTTP_CONNECTION_POOL_SIZE);
-            clientConfig.registerConnectionPoolConfig(poolSize);
 
             if (log.isDebugEnabled()) {
                 log.debug("Successfully registered SCIM2 client configurations from identity.xml");
