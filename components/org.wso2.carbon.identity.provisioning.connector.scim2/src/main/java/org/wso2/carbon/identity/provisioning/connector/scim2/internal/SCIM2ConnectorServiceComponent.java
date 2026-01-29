@@ -25,6 +25,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.wso2.carbon.identity.provisioning.AbstractProvisioningConnectorFactory;
 import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningConnectorFactory;
+import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIM2ClientConfigRegistrar;
 
 /**
  * OSGI Service Component that handles SCIM2 Connector activation.
@@ -48,6 +49,7 @@ public class SCIM2ConnectorServiceComponent {
                     SCIM2ProvisioningConnectorFactory();
             context.getBundleContext().registerService(AbstractProvisioningConnectorFactory.class.getName(),
                     scim2ProvisioningConnectorFactory, null);
+            SCIM2ClientConfigRegistrar.registerClientConfig();
             if (log.isDebugEnabled()) {
                 log.debug("SCIM2 Provisioning Connector bundle is activated");
             }

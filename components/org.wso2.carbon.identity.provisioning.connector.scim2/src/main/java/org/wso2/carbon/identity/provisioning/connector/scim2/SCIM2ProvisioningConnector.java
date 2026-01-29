@@ -1,17 +1,19 @@
 /*
- * Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2018-2026, WSO2 LLC. (http://www.wso2.com).
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
  * You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package org.wso2.carbon.identity.provisioning.connector.scim2;
@@ -30,7 +32,7 @@ import org.wso2.carbon.identity.provisioning.ProvisioningEntity;
 import org.wso2.carbon.identity.provisioning.ProvisioningEntityType;
 import org.wso2.carbon.identity.provisioning.ProvisioningOperation;
 import org.wso2.carbon.identity.provisioning.ProvisioningUtil;
-import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIMClaimResolver;
+import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIM2ConnectorUtil;
 import org.wso2.carbon.identity.scim2.common.utils.SCIMCommonUtils;
 import org.wso2.carbon.user.core.UserCoreConstants;
 import org.wso2.carbon.user.core.UserStoreException;
@@ -45,6 +47,7 @@ import org.wso2.charon3.core.objects.Group;
 import org.wso2.charon3.core.objects.User;
 import org.wso2.charon3.core.schema.SCIMConstants;
 import org.wso2.charon3.core.schema.SCIMSchemaDefinitions;
+import org.wso2.charon3.core.utils.codeutils.PatchOperation;
 import org.wso2.scim2.client.ProvisioningClient;
 import org.wso2.scim2.client.SCIMProvider;
 import org.wso2.scim2.util.SCIM2CommonConstants;
@@ -146,15 +149,23 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
     private void provisionUser(ProvisioningEntity provisioningEntity) throws IdentityProvisioningException {
 
-        if (provisioningEntity.getOperation() == ProvisioningOperation.POST) {
-            createUser(provisioningEntity);
-        } else if (provisioningEntity.getOperation() == ProvisioningOperation.DELETE) {
-            deleteUser(provisioningEntity);
-        } else if (provisioningEntity.getOperation() == ProvisioningOperation.PUT) {
-            updateUser(provisioningEntity, ProvisioningOperation.PUT);
-        } else {
-            log.warn("Unsupported provisioning operation : " + provisioningEntity.getOperation() +
-                    " for provisioning entity : " + provisioningEntity.getEntityName());
+        switch (provisioningEntity.getOperation()) {
+            case POST:
+                createUser(provisioningEntity);
+                break;
+            case DELETE:
+                deleteUser(provisioningEntity);
+                break;
+            case PUT:
+                updateUser(provisioningEntity, ProvisioningOperation.PUT);
+                break;
+            case PATCH:
+                updateUser(provisioningEntity, ProvisioningOperation.PATCH);
+                break;
+            default:
+                log.warn("Unsupported provisioning operation : " + provisioningEntity.getOperation() +
+                        " for provisioning entity : " + provisioningEntity.getEntityName());
+                break;
         }
     }
 
@@ -172,17 +183,24 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             if (CollectionUtils.isNotEmpty(userNames)) {
                 userName = userNames.get(0);
             }
-            // get single-valued claims
+            // Get single-valued claims.
             Map<String, String> singleValued = getSingleValuedClaims(userEntity.getAttributes());
-            // if user created through management console, claim values are not present.
-            User user = (User) SCIMClaimResolver.constructSCIMObjectFromAttributes(singleValued, 1);
+            if (MapUtils.isEmpty(singleValued)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Skipping user provisioning. No claims found for user: " +
+                            SCIM2ConnectorUtil.maskIfRequired(userName));
+                }
+                return;
+            }
+            User user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
             user.setUserName(userName);
             setUserPassword(user, userEntity);
 
-            ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, user, null);
-            scimProvsioningClient.provisionCreateUser();
+            ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, user, null);
+            scimProvisioningClient.provisionCreateUser();
         } catch (Exception e) {
-            throw new IdentityProvisioningException("Error while creating the user : " + userName, e);
+            throw new IdentityProvisioningException("Error while creating the user : " +
+                    SCIM2ConnectorUtil.maskIfRequired(userName), e);
         }
     }
 
@@ -205,7 +223,8 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, user, null);
             scimProvsioningClient.provisionDeleteUser();
         } catch (Exception e) {
-            throw new IdentityProvisioningException("Error while deleting user : " + userName, e);
+            throw new IdentityProvisioningException("Error while deleting user : " +
+                    SCIM2ConnectorUtil.maskIfRequired(userName), e);
         }
     }
 
@@ -224,22 +243,58 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             if (CollectionUtils.isNotEmpty(userNames)) {
                 userName = extractDomainFreeName(userNames.get(0));
             }
-            User user;
-            // get single-valued claims
+
+            // Get single-valued claims.
             Map<String, String> singleValued = getSingleValuedClaims(userEntity.getAttributes());
-            // if user created through management console, claim values are not present.
-            if (MapUtils.isNotEmpty(singleValued)) {
-                user = (User) SCIMClaimResolver.constructSCIMObjectFromAttributes(singleValued, 1);
-            } else {
-                user = new User();
+            if (MapUtils.isEmpty(singleValued)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Skipping user provisioning. No claims found for user: " +
+                            SCIM2ConnectorUtil.maskIfRequired(userName));
+                }
+                return;
             }
-            user.setUserName(userName);
-            ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, user, null);
-            if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
+
+            // Determine whether to use PATCH based on configuration.
+            boolean shouldUsePatch = ProvisioningOperation.PATCH.equals(provisioningOperation) ||
+                    SCIM2ConnectorUtil.isSCIMPatchEnabledForUpdates();
+
+            User user;
+            if (shouldUsePatch) {
+                // For PATCH operation, construct User object and convert its attributes to patch operations.
+                if (MapUtils.isNotEmpty(singleValued)) {
+                    user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
+                } else {
+                    user = new User();
+                }
+                user.setUserName(userName);
+
+                Map<String, Object> additionalInformation = new HashMap<>();
+                List<PatchOperation> patchOperations = SCIM2ConnectorUtil.buildPatchOperationsFromUser(user);
+
+                if (CollectionUtils.isEmpty(patchOperations)) {
+                    log.warn("No patch operations to perform for user: " +
+                            SCIM2ConnectorUtil.maskIfRequired(userName));
+                    return;
+                }
+
+                additionalInformation.put(SCIM2CommonConstants.PATCH_OPERATIONS, patchOperations);
+                ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, user,
+                        additionalInformation);
+                scimProvisioningClient.provisionPatchUser();
+            } else if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
+                // For PUT operation (when PATCH is disabled), construct full User object.
+                if (MapUtils.isNotEmpty(singleValued)) {
+                    user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
+                } else {
+                    user = new User();
+                }
+                user.setUserName(userName);
+                ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, user, null);
                 scimProvisioningClient.provisionUpdateUser();
             }
         } catch (Exception e) {
-            throw new IdentityProvisioningException("Error while updating the user : " + userName, e);
+            throw new IdentityProvisioningException("Error while updating the user : " +
+                    SCIM2ConnectorUtil.maskIfRequired(userName), e);
         }
     }
 
