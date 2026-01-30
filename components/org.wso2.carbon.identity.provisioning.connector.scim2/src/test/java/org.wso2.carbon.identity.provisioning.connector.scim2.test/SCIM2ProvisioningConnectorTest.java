@@ -187,9 +187,10 @@ public class SCIM2ProvisioningConnectorTest {
                     false), value);
             ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP, ProvisioningOperation.
                     PUT,attributes);
-            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("updateGroup", ProvisioningEntity.class);
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("updateGroup", ProvisioningEntity.class,
+                    ProvisioningOperation.class);
             method.setAccessible(true);
-            method.invoke(sCIM2ProvisioningConnector, groupEntity);
+            method.invoke(sCIM2ProvisioningConnector, groupEntity, ProvisioningOperation.PUT);
         }
     }
 

@@ -119,41 +119,20 @@ public class SCIM2ConnectorUtil {
     }
 
     /**
-     * Builds PATCH operations from Group object attributes.
-     * This method converts SCIM Group attributes to SCIM PATCH operations by traversing the Group object's
-     * attribute map and creating replace operations for each attribute.
+     * Creates a PATCH operation for updating group displayName.
+     * This method creates a single PATCH operation to replace the displayName attribute of a group.
+     * Members are handled separately on the client side and should not be included in this operation.
      *
-     * @param group Group object with attributes to be patched.
-     * @return List of PatchOperation objects.
+     * @param displayName The new display name for the group.
+     * @return PatchOperation for displayName.
      */
-    public static List<PatchOperation> buildPatchOperationsFromGroup(Group group) {
+    public static PatchOperation createDisplayNamePatchOperation(String displayName) {
 
-        List<PatchOperation> patchOperations = new ArrayList<>();
-
-        if (group == null || group.getAttributeList() == null || group.getAttributeList().isEmpty()) {
-            return patchOperations;
-        }
-
-        try {
-            // Iterate through Group object's attributes and convert to patch operations.
-            Map<String, Attribute> attributeList = group.getAttributeList();
-            JSONEncoder encoder = new JSONEncoder();
-
-            for (Map.Entry<String, Attribute> entry : attributeList.entrySet()) {
-                String attributeName = entry.getKey();
-                Attribute attribute = entry.getValue();
-
-                // For group attributes, create patch operations.
-                Object attributeValue = getAttributeValue(attribute, encoder);
-                if (attributeValue != null) {
-                    createAndAddPatchOperation(attributeName, attributeValue, patchOperations);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error building patch operations from Group object", e);
-        }
-
-        return patchOperations;
+        PatchOperation patchOp = new PatchOperation();
+        patchOp.setOperation(SCIMConstants.OperationalConstants.REPLACE);
+        patchOp.setPath(SCIMConstants.GroupSchemaConstants.DISPLAY_NAME);
+        patchOp.setValues(displayName);
+        return patchOp;
     }
 
     /**

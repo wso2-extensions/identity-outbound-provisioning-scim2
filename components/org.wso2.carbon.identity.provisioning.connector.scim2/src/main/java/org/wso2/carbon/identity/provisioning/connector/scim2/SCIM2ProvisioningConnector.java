@@ -52,6 +52,7 @@ import org.wso2.scim2.client.ProvisioningClient;
 import org.wso2.scim2.client.SCIMProvider;
 import org.wso2.scim2.util.SCIM2CommonConstants;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -377,53 +378,45 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                 groupName = groupNames.get(0);
             }
 
-            Group group;
+            Group group = new Group();
+            group.setDisplayName(groupName);
+            List<String> userList = getUserNames(groupEntity.getAttributes());
+            setGroupMembers(group, userList);
+
+            oldGroupName = ProvisioningUtil.getAttributeValue(groupEntity,
+                    IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI);
+            ProvisioningClient scimProvisioningClient;
+
             if (ProvisioningOperation.PATCH.equals(provisioningOperation)) {
-                // For PATCH operation, construct Group object and convert its attributes to patch operations.
-                group = new Group();
-                group.setDisplayName(groupName);
-                List<String> userList = getUserNames(groupEntity.getAttributes());
-                setGroupMembers(group, userList);
-
                 Map<String, Object> additionalInformation = new HashMap<>();
-                List<PatchOperation> patchOperations = SCIM2ConnectorUtil.buildPatchOperationsFromGroup(group);
-
-                if (CollectionUtils.isEmpty(patchOperations)) {
-                    log.warn("No patch operations to perform for group: " + groupName);
-                    return;
-                }
-
-                additionalInformation.put(SCIM2CommonConstants.PATCH_OPERATIONS, patchOperations);
-
-                oldGroupName = ProvisioningUtil.getAttributeValue(groupEntity,
-                        IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI);
+                // TODO: Handle member updates via PATCH.
                 if (StringUtils.isNotEmpty(oldGroupName)) {
+                    // For PATCH operation, only patch displayName when role name has changed.
+                    // Members are handled separately on the client side.
+                    List<PatchOperation> patchOperations = new ArrayList<>();
+                    patchOperations.add(SCIM2ConnectorUtil.createDisplayNamePatchOperation(groupName));
+
+                    additionalInformation.put(SCIM2CommonConstants.PATCH_OPERATIONS, patchOperations);
                     additionalInformation.put(SCIM2CommonConstants.IS_ROLE_NAME_CHANGED_ON_UPDATE, true);
                     additionalInformation.put(SCIM2CommonConstants.OLD_GROUP_NAME, oldGroupName);
+
+                    scimProvisioningClient = new ProvisioningClient(scimProvider, group,
+                            additionalInformation);
+                } else {
+                    scimProvisioningClient = new ProvisioningClient(scimProvider, group, null);
                 }
-
-                ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, group,
-                        additionalInformation);
                 scimProvisioningClient.provisionPatchGroup();
-            } else if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
-                // For PUT operation (when PATCH is disabled), construct full Group object.
-                group = new Group();
-                group.setDisplayName(groupName);
-                List<String> userList = getUserNames(groupEntity.getAttributes());
-                setGroupMembers(group, userList);
 
-                oldGroupName = ProvisioningUtil.getAttributeValue(groupEntity,
-                        IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI);
-                ProvisioningClient scimProvsioningClient;
+            } else if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
                 if (StringUtils.isEmpty(oldGroupName)) {
-                    scimProvsioningClient = new ProvisioningClient(scimProvider, group, null);
+                    scimProvisioningClient = new ProvisioningClient(scimProvider, group, null);
                 } else {
                     Map<String, Object> additionalInformation = new HashMap();
                     additionalInformation.put(SCIM2CommonConstants.IS_ROLE_NAME_CHANGED_ON_UPDATE, true);
                     additionalInformation.put(SCIM2CommonConstants.OLD_GROUP_NAME, oldGroupName);
-                    scimProvsioningClient = new ProvisioningClient(scimProvider, group, additionalInformation);
+                    scimProvisioningClient = new ProvisioningClient(scimProvider, group, additionalInformation);
                 }
-                scimProvsioningClient.provisionUpdateGroup();
+                scimProvisioningClient.provisionUpdateGroup();
             }
         } catch (Exception e) {
             String groupDisplayName = oldGroupName != null ? oldGroupName : groupName;
