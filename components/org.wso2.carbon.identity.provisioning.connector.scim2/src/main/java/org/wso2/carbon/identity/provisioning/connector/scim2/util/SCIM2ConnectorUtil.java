@@ -39,6 +39,7 @@ import org.wso2.charon3.core.exceptions.BadRequestException;
 import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.exceptions.NotFoundException;
 import org.wso2.charon3.core.extensions.UserManager;
+import org.wso2.charon3.core.objects.Group;
 import org.wso2.charon3.core.objects.User;
 import org.wso2.charon3.core.schema.SCIMConstants;
 import org.wso2.charon3.core.utils.codeutils.PatchOperation;
@@ -112,6 +113,44 @@ public class SCIM2ConnectorUtil {
             }
         } catch (Exception e) {
             log.error("Error building patch operations from User object", e);
+        }
+
+        return patchOperations;
+    }
+
+    /**
+     * Builds PATCH operations from Group object attributes.
+     * This method converts SCIM Group attributes to SCIM PATCH operations by traversing the Group object's
+     * attribute map and creating replace operations for each attribute.
+     *
+     * @param group Group object with attributes to be patched.
+     * @return List of PatchOperation objects.
+     */
+    public static List<PatchOperation> buildPatchOperationsFromGroup(Group group) {
+
+        List<PatchOperation> patchOperations = new ArrayList<>();
+
+        if (group == null || group.getAttributeList() == null || group.getAttributeList().isEmpty()) {
+            return patchOperations;
+        }
+
+        try {
+            // Iterate through Group object's attributes and convert to patch operations.
+            Map<String, Attribute> attributeList = group.getAttributeList();
+            JSONEncoder encoder = new JSONEncoder();
+
+            for (Map.Entry<String, Attribute> entry : attributeList.entrySet()) {
+                String attributeName = entry.getKey();
+                Attribute attribute = entry.getValue();
+
+                // For group attributes, create patch operations.
+                Object attributeValue = getAttributeValue(attribute, encoder);
+                if (attributeValue != null) {
+                    createAndAddPatchOperation(attributeName, attributeValue, patchOperations);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error building patch operations from Group object", e);
         }
 
         return patchOperations;
