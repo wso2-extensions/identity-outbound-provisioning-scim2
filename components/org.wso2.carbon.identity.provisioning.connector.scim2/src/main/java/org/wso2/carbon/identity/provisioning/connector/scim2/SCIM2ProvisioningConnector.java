@@ -52,6 +52,7 @@ import org.wso2.scim2.client.ProvisioningClient;
 import org.wso2.scim2.client.SCIMProvider;
 import org.wso2.scim2.util.SCIM2CommonConstants;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -135,15 +136,23 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
     private void provisionGroup(ProvisioningEntity provisioningEntity) throws IdentityProvisioningException {
 
-        if (provisioningEntity.getOperation() == ProvisioningOperation.DELETE) {
-            deleteGroup(provisioningEntity);
-        } else if (provisioningEntity.getOperation() == ProvisioningOperation.POST) {
-            createGroup(provisioningEntity);
-        } else if (provisioningEntity.getOperation() == ProvisioningOperation.PUT) {
-            updateGroup(provisioningEntity);
-        } else {
-            log.warn("Unsupported provisioning operation : " + provisioningEntity.getOperation() +
-                    " for provisioning entity : " + provisioningEntity.getEntityName());
+        switch (provisioningEntity.getOperation()) {
+            case POST:
+                createGroup(provisioningEntity);
+                break;
+            case DELETE:
+                deleteGroup(provisioningEntity);
+                break;
+            case PUT:
+                updateGroup(provisioningEntity, ProvisioningOperation.PUT);
+                break;
+            case PATCH:
+                updateGroup(provisioningEntity, ProvisioningOperation.PATCH);
+                break;
+            default:
+                log.warn("Unsupported provisioning operation : " + provisioningEntity.getOperation() +
+                        " for provisioning entity : " + provisioningEntity.getEntityName());
+                break;
         }
     }
 
@@ -355,17 +364,20 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
      * Updates the group.
      *
      * @param groupEntity
+     * @param provisioningOperation
      * @throws IdentityProvisioningException
      */
-    private void updateGroup(ProvisioningEntity groupEntity) throws IdentityProvisioningException {
+    private void updateGroup(ProvisioningEntity groupEntity, ProvisioningOperation provisioningOperation) throws
+            IdentityProvisioningException {
 
+        String groupName = null;
         String oldGroupName = null;
         try {
             List<String> groupNames = getGroupNames(groupEntity.getAttributes());
-            String groupName = null;
             if (CollectionUtils.isNotEmpty(groupNames)) {
                 groupName = groupNames.get(0);
             }
+
             Group group = new Group();
             group.setDisplayName(groupName);
             List<String> userList = getUserNames(groupEntity.getAttributes());
@@ -373,20 +385,42 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
             oldGroupName = ProvisioningUtil.getAttributeValue(groupEntity,
                     IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI);
-            ProvisioningClient scimProvsioningClient;
-            if (StringUtils.isEmpty(oldGroupName)) {
-                scimProvsioningClient = new ProvisioningClient(scimProvider, group, null);
-            } else {
-                Map<String, Object> additionalInformation = new HashMap();
-                additionalInformation.put(SCIM2CommonConstants.IS_ROLE_NAME_CHANGED_ON_UPDATE, true);
-                additionalInformation.put(SCIM2CommonConstants.OLD_GROUP_NAME, oldGroupName);
-                scimProvsioningClient = new ProvisioningClient(scimProvider, group, additionalInformation);
-            }
-            if (ProvisioningOperation.PUT.equals(groupEntity.getOperation())) {
-                scimProvsioningClient.provisionUpdateGroup();
+            ProvisioningClient scimProvisioningClient;
+
+            if (ProvisioningOperation.PATCH.equals(provisioningOperation)) {
+                Map<String, Object> additionalInformation = new HashMap<>();
+                // TODO: Handle member updates via PATCH.
+                if (StringUtils.isNotEmpty(oldGroupName)) {
+                    // For PATCH operation, only patch displayName when role name has changed.
+                    // Members are handled separately on the client side.
+                    List<PatchOperation> patchOperations = new ArrayList<>();
+                    patchOperations.add(SCIM2ConnectorUtil.createDisplayNamePatchOperation(groupName));
+
+                    additionalInformation.put(SCIM2CommonConstants.PATCH_OPERATIONS, patchOperations);
+                    additionalInformation.put(SCIM2CommonConstants.IS_ROLE_NAME_CHANGED_ON_UPDATE, true);
+                    additionalInformation.put(SCIM2CommonConstants.OLD_GROUP_NAME, oldGroupName);
+
+                    scimProvisioningClient = new ProvisioningClient(scimProvider, group,
+                            additionalInformation);
+                } else {
+                    scimProvisioningClient = new ProvisioningClient(scimProvider, group, null);
+                }
+                scimProvisioningClient.provisionPatchGroup();
+
+            } else if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
+                if (StringUtils.isEmpty(oldGroupName)) {
+                    scimProvisioningClient = new ProvisioningClient(scimProvider, group, null);
+                } else {
+                    Map<String, Object> additionalInformation = new HashMap();
+                    additionalInformation.put(SCIM2CommonConstants.IS_ROLE_NAME_CHANGED_ON_UPDATE, true);
+                    additionalInformation.put(SCIM2CommonConstants.OLD_GROUP_NAME, oldGroupName);
+                    scimProvisioningClient = new ProvisioningClient(scimProvider, group, additionalInformation);
+                }
+                scimProvisioningClient.provisionUpdateGroup();
             }
         } catch (Exception e) {
-            throw new IdentityProvisioningException("Error while updating group : " + oldGroupName, e);
+            String groupDisplayName = oldGroupName != null ? oldGroupName : groupName;
+            throw new IdentityProvisioningException("Error while updating group : " + groupDisplayName, e);
         }
     }
 
