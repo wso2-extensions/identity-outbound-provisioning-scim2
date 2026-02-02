@@ -187,9 +187,35 @@ public class SCIM2ProvisioningConnectorTest {
                     false), value);
             ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP, ProvisioningOperation.
                     PUT,attributes);
-            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("updateGroup", ProvisioningEntity.class);
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("updateGroup", ProvisioningEntity.class,
+                    ProvisioningOperation.class);
             method.setAccessible(true);
-            method.invoke(sCIM2ProvisioningConnector, groupEntity);
+            method.invoke(sCIM2ProvisioningConnector, groupEntity, ProvisioningOperation.PUT);
+        }
+    }
+
+    @Test
+    public void testPatchGroupDisplayName() throws Exception {
+
+        try (MockedConstruction<ProvisioningClient> mocked = Mockito.mockConstruction(ProvisioningClient.class)) {
+            sCIM2ProvisioningConnector.init(new Property[0]);
+            Map<ClaimMapping, List<String>> attributes = new HashMap<>();
+            List<String> oldGroupName = new ArrayList<>();
+            oldGroupName.add("oldGroupName");
+            List<String> newGroupName = new ArrayList<>();
+            newGroupName.add("newGroupName");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI,
+                    null, null,
+                    false), oldGroupName);
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.NEW_GROUP_NAME_CLAIM_URI,
+                    null, null,
+                    false), newGroupName);
+            ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP,
+                    ProvisioningOperation.PATCH, attributes);
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("updateGroup",
+                    ProvisioningEntity.class, ProvisioningOperation.class);
+            method.setAccessible(true);
+            method.invoke(sCIM2ProvisioningConnector, groupEntity, ProvisioningOperation.PATCH);
         }
     }
 

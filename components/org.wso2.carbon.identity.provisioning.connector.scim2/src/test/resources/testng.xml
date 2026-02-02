@@ -6,6 +6,7 @@
             <class name="org.wso2.carbon.identity.provisioning.connector.scim2.test.SCIM2ProvisioningConnectorFactoryTest"/>
             <class name="org.wso2.carbon.identity.provisioning.connector.scim2.test.SCIM2ProvisioningConnectorTest"/>
             <class name="org.wso2.carbon.identity.provisioning.connector.scim2.test.SCIMClaimResolverTest"/>
+            <class name="org.wso2.carbon.identity.provisioning.connector.scim2.test.SCIM2ConnectorUtilTest"/>
         </classes>
     </test>
 </suite>

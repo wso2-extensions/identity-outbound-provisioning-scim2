@@ -39,6 +39,7 @@ import org.wso2.charon3.core.exceptions.BadRequestException;
 import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.exceptions.NotFoundException;
 import org.wso2.charon3.core.extensions.UserManager;
+import org.wso2.charon3.core.objects.Group;
 import org.wso2.charon3.core.objects.User;
 import org.wso2.charon3.core.schema.SCIMConstants;
 import org.wso2.charon3.core.utils.codeutils.PatchOperation;
@@ -115,6 +116,23 @@ public class SCIM2ConnectorUtil {
         }
 
         return patchOperations;
+    }
+
+    /**
+     * Creates a PATCH operation for updating group displayName.
+     * This method creates a single PATCH operation to replace the displayName attribute of a group.
+     * Members are handled separately on the client side and should not be included in this operation.
+     *
+     * @param displayName The new display name for the group.
+     * @return PatchOperation for displayName.
+     */
+    public static PatchOperation createDisplayNamePatchOperation(String displayName) {
+
+        PatchOperation patchOp = new PatchOperation();
+        patchOp.setOperation(SCIMConstants.OperationalConstants.REPLACE);
+        patchOp.setPath(SCIMConstants.GroupSchemaConstants.DISPLAY_NAME);
+        patchOp.setValues(displayName);
+        return patchOp;
     }
 
     /**
