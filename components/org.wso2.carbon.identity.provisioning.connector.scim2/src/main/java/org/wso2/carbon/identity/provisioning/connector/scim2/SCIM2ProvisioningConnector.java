@@ -387,9 +387,26 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                     IdentityProvisioningConstants.OLD_GROUP_NAME_CLAIM_URI);
             ProvisioningClient scimProvisioningClient;
 
-            if (ProvisioningOperation.PATCH.equals(provisioningOperation)) {
+            // Determine whether to use PATCH based on configuration.
+            boolean shouldUsePatch = ProvisioningOperation.PATCH.equals(provisioningOperation) ||
+                    SCIM2ConnectorUtil.isSCIMPatchEnabledForUpdates();
+
+            if (shouldUsePatch) {
                 Map<String, Object> additionalInformation = new HashMap<>();
-                // TODO: Handle member updates via PATCH.
+
+                // Handle member updates via PATCH.
+                List<String> newUsers = ProvisioningUtil.getClaimValues(groupEntity.getAttributes(),
+                        IdentityProvisioningConstants.NEW_USER_CLAIM_URI, getUserStoreDomainName());
+                List<String> deletedUsers = ProvisioningUtil.getClaimValues(groupEntity.getAttributes(),
+                        IdentityProvisioningConstants.DELETED_USER_CLAIM_URI, getUserStoreDomainName());
+
+                if (CollectionUtils.isNotEmpty(newUsers)) {
+                    additionalInformation.put(SCIM2CommonConstants.NEW_MEMBERS, newUsers);
+                }
+                if (CollectionUtils.isNotEmpty(deletedUsers)) {
+                    additionalInformation.put(SCIM2CommonConstants.DELETED_MEMBERS, deletedUsers);
+                }
+
                 if (StringUtils.isNotEmpty(oldGroupName)) {
                     // For PATCH operation, only patch displayName when role name has changed.
                     // Members are handled separately on the client side.
@@ -403,7 +420,9 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                     scimProvisioningClient = new ProvisioningClient(scimProvider, group,
                             additionalInformation);
                 } else {
-                    scimProvisioningClient = new ProvisioningClient(scimProvider, group, null);
+                    scimProvisioningClient = new ProvisioningClient(scimProvider, group,
+                            CollectionUtils.isNotEmpty(newUsers) || CollectionUtils.isNotEmpty(deletedUsers)
+                                ? additionalInformation : null);
                 }
                 scimProvisioningClient.provisionPatchGroup();
 

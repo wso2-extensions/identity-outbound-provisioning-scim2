@@ -48,8 +48,4 @@ public class SCIM2ProvisioningConnectorConstants {
             "OutboundProvisioning.SCIM2Client.HttpConnectionTimeout";
     public static final String SCIM2_CLIENT_HTTP_CONNECTION_REQUEST_TIMEOUT =
             "OutboundProvisioning.SCIM2Client.HttpConnectionRequestTimeout";
-    public static final String SCIM2_CLIENT_HTTP_CONNECTION_POOL_SIZE =
-            "OutboundProvisioning.SCIM2Client.HttpConnectionPoolSize";
-    public static final String SCIM2_CLIENT_NIO_THREAD_COUNT =
-            "OutboundProvisioning.SCIM2Client.NioThreadCount";
 }

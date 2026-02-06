@@ -691,4 +691,76 @@ public class SCIM2ProvisioningConnectorTest {
             Mockito.verify(client, Mockito.never()).provisionUpdateUser();
         }
     }
+
+    @Test
+    public void testPatchGroupWithMemberUpdates() throws Exception {
+
+        try (MockedConstruction<ProvisioningClient> mocked = Mockito.mockConstruction(ProvisioningClient.class,
+                (mock, context) -> {
+                    // Capture the additionalInformation passed to ProvisioningClient constructor.
+                    Map<String, Object> additionalInfo = (Map<String, Object>) context.arguments().get(2);
+                    if (additionalInfo != null) {
+                        // Verify that NEW_MEMBERS and DELETED_MEMBERS are present in additionalInformation.
+                        assertTrue(additionalInfo.containsKey(org.wso2.scim2.util.SCIM2CommonConstants.NEW_MEMBERS),
+                                "additionalInformation should contain NEW_MEMBERS");
+                        assertTrue(additionalInfo.containsKey(org.wso2.scim2.util.SCIM2CommonConstants.DELETED_MEMBERS),
+                                "additionalInformation should contain DELETED_MEMBERS");
+
+                        // Verify the values of NEW_MEMBERS and DELETED_MEMBERS.
+                        List<String> newMembers = (List<String>) additionalInfo.get(
+                                org.wso2.scim2.util.SCIM2CommonConstants.NEW_MEMBERS);
+                        List<String> deletedMembers = (List<String>) additionalInfo.get(
+                                org.wso2.scim2.util.SCIM2CommonConstants.DELETED_MEMBERS);
+
+                        assertNotNull(newMembers, "NEW_MEMBERS should not be null");
+                        assertNotNull(deletedMembers, "DELETED_MEMBERS should not be null");
+                        assertEquals(newMembers.size(), 2, "Should have 2 new members");
+                        assertEquals(deletedMembers.size(), 1, "Should have 1 deleted member");
+                        assertTrue(newMembers.contains("newUser1"), "Should contain newUser1");
+                        assertTrue(newMembers.contains("newUser2"), "Should contain newUser2");
+                        assertTrue(deletedMembers.contains("removedUser"), "Should contain removedUser");
+                    }
+                })) {
+
+            sCIM2ProvisioningConnector.init(new Property[0]);
+
+            // Create attributes with group name, new users, and deleted users.
+            Map<ClaimMapping, List<String>> attributes = new HashMap<>();
+
+            // Set group name.
+            List<String> groupName = new ArrayList<>();
+            groupName.add("testGroup");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.NEW_GROUP_NAME_CLAIM_URI,
+                    null, null, false), groupName);
+
+            // Set new users to be added to the group.
+            List<String> newUsers = new ArrayList<>();
+            newUsers.add("newUser1");
+            newUsers.add("newUser2");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.NEW_USER_CLAIM_URI,
+                    null, null, false), newUsers);
+
+            // Set users to be removed from the group.
+            List<String> deletedUsers = new ArrayList<>();
+            deletedUsers.add("removedUser");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.DELETED_USER_CLAIM_URI,
+                    null, null, false), deletedUsers);
+
+            // Create provisioning entity with PATCH operation.
+            ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP,
+                    ProvisioningOperation.PATCH, attributes);
+
+            // Use reflection to call updateGroup with PATCH operation.
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("updateGroup",
+                    ProvisioningEntity.class, ProvisioningOperation.class);
+            method.setAccessible(true);
+            method.invoke(sCIM2ProvisioningConnector, groupEntity, ProvisioningOperation.PATCH);
+
+            // Verify that provisionPatchGroup was called.
+            assertEquals(mocked.constructed().size(), 1,
+                    "ProvisioningClient should be constructed once");
+            ProvisioningClient client = mocked.constructed().get(0);
+            Mockito.verify(client, Mockito.times(1)).provisionPatchGroup();
+        }
+    }
 }
