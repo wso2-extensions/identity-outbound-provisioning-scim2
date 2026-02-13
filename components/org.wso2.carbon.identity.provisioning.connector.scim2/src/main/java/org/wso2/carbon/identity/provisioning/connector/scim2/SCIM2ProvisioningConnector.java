@@ -50,6 +50,7 @@ import org.wso2.charon3.core.schema.SCIMSchemaDefinitions;
 import org.wso2.charon3.core.utils.codeutils.PatchOperation;
 import org.wso2.scim2.client.ProvisioningClient;
 import org.wso2.scim2.client.SCIMProvider;
+import org.wso2.scim2.util.AuthenticationType;
 import org.wso2.scim2.util.SCIM2CommonConstants;
 
 import java.util.ArrayList;
@@ -67,6 +68,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     private static final Log log = LogFactory.getLog(SCIM2ProvisioningConnector.class);
     private SCIMProvider scimProvider;
     private String userStoreDomainName;
+    private String authenticationType;
 
     /**
      * Populates the SCIM2 configuration properties.
@@ -78,16 +80,33 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     public void init(Property[] provisioningProperties) throws IdentityProvisioningException {
 
         scimProvider = new SCIMProvider();
+
         if (provisioningProperties != null && provisioningProperties.length > 0) {
+            // First pass: extract authentication type and credentials
+            String username = null;
+            String password = null;
+            String accessToken = null;
+            String apiKeyHeader = null;
+            String apiKeyValue = null;
+
             for (Property property : provisioningProperties) {
                 if (SCIM2ProvisioningConnectorConstants.SCIM2_USER_EP.equals(property.getName())) {
                     populateSCIMProvider(property, SCIM2CommonConstants.ELEMENT_NAME_USER_ENDPOINT);
                 } else if (SCIM2ProvisioningConnectorConstants.SCIM2_GROUP_EP.equals(property.getName())) {
                     populateSCIMProvider(property, SCIM2CommonConstants.ELEMENT_NAME_GROUP_ENDPOINT);
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_AUTHENTICATION_MODE.equals(property.getName())) {
+                    authenticationType = property.getValue() != null ? property.getValue() :
+                            property.getDefaultValue();
                 } else if (SCIM2ProvisioningConnectorConstants.SCIM2_USERNAME.equals(property.getName())) {
-                    populateSCIMProvider(property, SCIMConstants.UserSchemaConstants.USER_NAME);
+                    username = property.getValue() != null ? property.getValue() : property.getDefaultValue();
                 } else if (SCIM2ProvisioningConnectorConstants.SCIM2_PASSWORD.equals(property.getName())) {
-                    populateSCIMProvider(property, SCIMConstants.UserSchemaConstants.PASSWORD);
+                    password = property.getValue() != null ? property.getValue() : property.getDefaultValue();
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_ACCESS_TOKEN.equals(property.getName())) {
+                    accessToken = property.getValue() != null ? property.getValue() : property.getDefaultValue();
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_API_KEY_HEADER.equals(property.getName())) {
+                    apiKeyHeader = property.getValue() != null ? property.getValue() : property.getDefaultValue();
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_API_KEY_VALUE.equals(property.getName())) {
+                    apiKeyValue = property.getValue() != null ? property.getValue() : property.getDefaultValue();
                 } else if (SCIM2ProvisioningConnectorConstants.SCIM2_USERSTORE_DOMAIN.equals(property.getName())) {
                     userStoreDomainName = property.getValue() != null ? property.getValue()
                             : property.getDefaultValue();
@@ -104,6 +123,67 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                     jitProvisioningEnabled = true;
                 }
             }
+
+            // Configure authentication based on type.
+            configureAuthentication(username, password, accessToken, apiKeyHeader, apiKeyValue);
+        }
+    }
+
+    /**
+     * Configure authentication on the SCIM provider based on authentication type.
+     *
+     * @param username       Username for BASIC auth.
+     * @param password       Password for BASIC auth.
+     * @param accessToken    Access token for BEARER auth.
+     * @param apiKeyHeader   API key header name for API_KEY auth.
+     * @param apiKeyValue    API key value for API_KEY auth.
+     */
+    private void configureAuthentication(String username, String password, String accessToken,
+                                        String apiKeyHeader, String apiKeyValue) {
+
+        // Parse authentication type from string value, default to BASIC if not specified.
+        AuthenticationType authType = StringUtils.isBlank(authenticationType) ?
+                AuthenticationType.BASIC : AuthenticationType.fromValue(authenticationType);
+
+        switch (authType) {
+            case BASIC:
+                if (StringUtils.isNotBlank(username) && StringUtils.isNotBlank(password)) {
+                    scimProvider.setProperty(SCIMConstants.UserSchemaConstants.USER_NAME, username);
+                    scimProvider.setProperty(SCIMConstants.UserSchemaConstants.PASSWORD, password);
+                    scimProvider.setProperty(SCIM2CommonConstants.AUTHENTICATION_TYPE, authType.getValue());
+                } else {
+                    log.warn("BASIC authentication requires both username and password. " +
+                            "Skipping authentication configuration.");
+                }
+                break;
+            case BEARER:
+                if (StringUtils.isNotBlank(accessToken)) {
+                    scimProvider.setProperty(SCIM2CommonConstants.ACCESS_TOKEN, accessToken);
+                    scimProvider.setProperty(SCIM2CommonConstants.AUTHENTICATION_TYPE, authType.getValue());
+                } else {
+                    log.warn("BEARER authentication requires an access token. " +
+                            "Skipping authentication configuration.");
+                }
+                break;
+            case API_KEY:
+                if (StringUtils.isNotBlank(apiKeyHeader) && StringUtils.isNotBlank(apiKeyValue)) {
+                    scimProvider.setProperty(SCIM2CommonConstants.API_KEY_HEADER, apiKeyHeader);
+                    scimProvider.setProperty(SCIM2CommonConstants.API_KEY_VALUE, apiKeyValue);
+                    scimProvider.setProperty(SCIM2CommonConstants.AUTHENTICATION_TYPE, authType.getValue());
+                } else {
+                    log.warn("API_KEY authentication requires both header name and value. " +
+                            "Skipping authentication configuration.");
+                }
+                break;
+            case NONE:
+                scimProvider.setProperty(SCIM2CommonConstants.AUTHENTICATION_TYPE, authType.getValue());
+                if (log.isDebugEnabled()) {
+                    log.debug("No authentication configured for SCIM2 provisioning");
+                }
+                break;
+            default:
+                log.warn("Unsupported authentication type: " + authenticationType + ". " +
+                        "Skipping authentication configuration.");
         }
     }
 

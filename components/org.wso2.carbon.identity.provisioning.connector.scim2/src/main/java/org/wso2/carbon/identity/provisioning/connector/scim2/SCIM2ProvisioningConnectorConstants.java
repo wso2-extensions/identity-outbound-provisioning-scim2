@@ -28,15 +28,23 @@ public class SCIM2ProvisioningConnectorConstants {
 
     public static final String SCIM2_USER_EP = "scim2-user-ep";
     public static final String SCIM2_GROUP_EP = "scim2-group-ep";
-    public static final String SCIM2_USERNAME = "scim2-username";
-    public static final String SCIM2_PASSWORD = "scim2-password";
     public static final String SCIM2_USERSTORE_DOMAIN = "scim2-user-store-domain";
-    public static final String DEFAULT_SCIM2_CORE_DIALECT = "urn:ietf:params:scim:schemas:core:2.0";
-    public static final String DEFAULT_SCIM2_USER_DIALECT = "urn:ietf:params:scim:schemas:core:2.0:User";
-    public static final String DEFAULT_SCIM2_ENTERPRISE_DIALECT = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User";
 
     public static final String SCIM2_ENABLE_PASSWORD_PROVISIONING = "scim2-enable-pwd-provisioning";
     public static final String SCIM2_DEFAULT_PASSWORD = "scim2-default-pwd";
+
+    // Authentication related constants.
+    public static final String SCIM2_AUTHENTICATION_MODE = "scim2-authentication-mode";
+    public static final String SCIM2_USERNAME = "scim2-username";
+    public static final String SCIM2_PASSWORD = "scim2-password";
+    public static final String SCIM2_ACCESS_TOKEN = "scim2-access-token";
+    public static final String SCIM2_API_KEY_HEADER = "scim2-api-key-header";
+    public static final String SCIM2_API_KEY_VALUE = "scim2-api-key-value";
+
+    public static final String DEFAULT_SCIM2_CORE_DIALECT = "urn:ietf:params:scim:schemas:core:2.0";
+    public static final String DEFAULT_SCIM2_USER_DIALECT = "urn:ietf:params:scim:schemas:core:2.0:User";
+    public static final String DEFAULT_SCIM2_ENTERPRISE_DIALECT
+            = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User";
 
     public static final String DEFAULT = "default";
     public static final String ATTRIBUTE_TYPE = ".type";
