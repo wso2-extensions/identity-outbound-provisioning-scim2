@@ -274,14 +274,14 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             }
             // Get single-valued claims.
             Map<String, String> singleValued = getSingleValuedClaims(userEntity.getAttributes());
-            if (MapUtils.isEmpty(singleValued)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Skipping user provisioning. No claims found for user: " +
-                            SCIM2ConnectorUtil.maskIfRequired(userName));
-                }
-                return;
+
+            User user;
+            if (MapUtils.isNotEmpty(singleValued)) {
+                user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
+            } else {
+                user = new User();
             }
-            User user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
+
             user.setUserName(userName);
             setUserPassword(user, userEntity);
 
@@ -335,13 +335,6 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
 
             // Get single-valued claims.
             Map<String, String> singleValued = getSingleValuedClaims(userEntity.getAttributes());
-            if (MapUtils.isEmpty(singleValued)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Skipping user provisioning. No claims found for user: " +
-                            SCIM2ConnectorUtil.maskIfRequired(userName));
-                }
-                return;
-            }
 
             // Determine whether to use PATCH based on configuration.
             boolean shouldUsePatch = ProvisioningOperation.PATCH.equals(provisioningOperation) ||
