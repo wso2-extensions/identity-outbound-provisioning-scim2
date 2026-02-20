@@ -96,8 +96,7 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         authMode.setOptions(new String[]{
                 AuthenticationType.BASIC.getValue(),
                 AuthenticationType.BEARER.getValue(),
-                AuthenticationType.API_KEY.getValue(),
-                AuthenticationType.NONE.getValue()
+                AuthenticationType.API_KEY.getValue()
         });
         authMode.setDefaultValue(AuthenticationType.BASIC.getValue());
 

@@ -121,8 +121,6 @@ public class SCIM2ProvisioningConnectorFactoryTest {
                 "Should contain BEARER auth type.");
         Assert.assertTrue(containsOption(options, AuthenticationType.API_KEY.getValue()),
                 "Should contain API_KEY auth type.");
-        Assert.assertTrue(containsOption(options, AuthenticationType.NONE.getValue()),
-                "Should contain NONE auth type.");
     }
 
     /**
