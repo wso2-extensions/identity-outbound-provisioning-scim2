@@ -21,6 +21,7 @@ package org.wso2.carbon.identity.provisioning.connector.scim2.util;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningConnectorConstants;
 import org.wso2.scim2.util.SCIM2ClientConfig;
@@ -70,6 +71,8 @@ public class SCIM2ClientConfigRegistrar {
                     SCIM2ProvisioningConnectorConstants.SCIM2_CLIENT_HTTP_CONNECTION_REQUEST_TIMEOUT),
                     DEFAULT_HTTP_CONNECTION_REQUEST_TIMEOUT_IN_MILLIS);
             clientConfig.registerTimeoutConfig(readTimeout, connectionTimeout, connectionRequestTimeout);
+
+            clientConfig.registerMaskingConfig(LoggerUtils.isLogMaskingEnable);
 
             if (log.isDebugEnabled()) {
                 log.debug("Successfully registered SCIM2 client configurations from identity.xml");

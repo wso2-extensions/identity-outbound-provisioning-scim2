@@ -203,12 +203,21 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                 return null;
             }
 
+            if (log.isDebugEnabled()) {
+                ProvisioningOperation operation = provisioningEntity.getOperation();
+                boolean usePatch = operation == ProvisioningOperation.PUT
+                        && SCIM2ConnectorUtil.isSCIMPatchEnabledForUpdates();
+                log.debug("Initiating SCIM2 outbound provisioning, entity type: "
+                        + provisioningEntity.getEntityType() + ", operation: " + operation
+                        + (usePatch ? " (effective HTTP method: PATCH)" : ""));
+            }
+
             if (provisioningEntity.getEntityType() == ProvisioningEntityType.USER) {
                 provisionUser(provisioningEntity);
             } else if (provisioningEntity.getEntityType() == ProvisioningEntityType.GROUP) {
                 provisionGroup(provisioningEntity);
             } else {
-                log.warn("Unsupported provisioning entity : " + provisioningEntity.getEntityName());
+                log.warn("Unsupported provisioning entity type: " + provisioningEntity.getEntityType());
             }
         }
         return null;

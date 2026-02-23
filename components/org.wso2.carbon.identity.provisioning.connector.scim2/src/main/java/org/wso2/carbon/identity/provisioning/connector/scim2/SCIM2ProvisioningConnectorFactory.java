@@ -111,7 +111,6 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         Property userPassword = new Property();
         userPassword.setName(SCIM2ProvisioningConnectorConstants.SCIM2_PASSWORD);
         userPassword.setDisplayName("Password");
-        userPassword.setConfidential(true);
         userPassword.setDisplayOrder(3);
         username.setRequired(false);
         userPassword.setType("string");
