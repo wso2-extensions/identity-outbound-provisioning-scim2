@@ -32,6 +32,7 @@ import org.wso2.carbon.identity.scim2.common.utils.SCIMCommonUtils;
 import org.wso2.scim2.util.SCIM2CommonConstants;
 import org.wso2.charon3.core.attributes.Attribute;
 import org.wso2.charon3.core.attributes.ComplexAttribute;
+import org.wso2.charon3.core.attributes.DefaultAttributeFactory;
 import org.wso2.charon3.core.attributes.MultiValuedAttribute;
 import org.wso2.charon3.core.attributes.SimpleAttribute;
 import org.wso2.charon3.core.encoder.JSONEncoder;
@@ -39,9 +40,10 @@ import org.wso2.charon3.core.exceptions.BadRequestException;
 import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.exceptions.NotFoundException;
 import org.wso2.charon3.core.extensions.UserManager;
-import org.wso2.charon3.core.objects.Group;
 import org.wso2.charon3.core.objects.User;
+import org.wso2.charon3.core.schema.AttributeSchema;
 import org.wso2.charon3.core.schema.SCIMConstants;
+import org.wso2.charon3.core.schema.SCIMSchemaDefinitions;
 import org.wso2.charon3.core.utils.codeutils.PatchOperation;
 
 import java.util.ArrayList;
@@ -71,6 +73,17 @@ public class SCIM2ConnectorUtil {
 
         return Boolean.parseBoolean(
                 IdentityUtil.getProperty(IdentityProvisioningConstants.ENABLE_SCIM_PATCH_FOR_UPDATES));
+    }
+
+    /**
+     * Checks whether SCIM-compliant email attribute encoding is enabled for outbound provisioning.
+     *
+     * @return true if SCIM-compliant email attribute encoding should be applied.
+     */
+    public static boolean isScimCompliantEmailAttributeEnabled() {
+
+        return Boolean.parseBoolean(
+                IdentityUtil.getProperty(IdentityProvisioningConstants.ENABLE_SCIM_COMPLIANT_EMAIL_ATTRIBUTE));
     }
 
     /**
@@ -268,7 +281,54 @@ public class SCIM2ConnectorUtil {
             throws CharonException, BadRequestException, NotFoundException {
 
         UserManager userManager = IdentitySCIMManager.getInstance().getUserManager();
-        return (User) AttributeMapper.constructSCIMObjectFromAttributes(userManager, attributes,
+        User user = (User) AttributeMapper.constructSCIMObjectFromAttributes(userManager, attributes,
                 SCIM2CommonConstants.USER);
+        if (isScimCompliantEmailAttributeEnabled()) {
+            ensureScimCompliantEmailAttribute(user);
+        }
+        return user;
+    }
+
+    /**
+     * Ensures the emails attribute on the given User is SCIM 2.0 compliant.
+     *
+     * @param user The User object to check and modify if necessary.
+     */
+    private static void ensureScimCompliantEmailAttribute(User user)
+            throws CharonException, BadRequestException {
+
+        Attribute emailAttribute = user.getAttribute(SCIMConstants.UserSchemaConstants.EMAILS);
+        if (!(emailAttribute instanceof MultiValuedAttribute)) {
+            return;
+        }
+
+        MultiValuedAttribute emailsMultiValued = (MultiValuedAttribute) emailAttribute;
+        List<Object> primitiveValues = emailsMultiValued.getAttributePrimitiveValues();
+        if (primitiveValues == null || primitiveValues.isEmpty()) {
+            return;
+        }
+
+        AttributeSchema emailsSchema = SCIMSchemaDefinitions.SCIMUserSchemaDefinition.EMAILS;
+        List<Object> emailValues = new ArrayList<>(primitiveValues);
+        emailsMultiValued.setAttributePrimitiveValues(new ArrayList<>());
+
+        boolean setPrimary = true;
+        for (Object emailValue : emailValues) {
+            SimpleAttribute valueSubAttr = new SimpleAttribute("value", emailValue.toString());
+            DefaultAttributeFactory.createAttribute(emailsSchema.getSubAttributeSchema("value"), valueSubAttr);
+
+            ComplexAttribute complexEmail = new ComplexAttribute(SCIMConstants.UserSchemaConstants.EMAILS);
+            complexEmail.setSubAttribute(valueSubAttr);
+
+            if (setPrimary) {
+                SimpleAttribute primarySubAttr = new SimpleAttribute("primary", true);
+                DefaultAttributeFactory.createAttribute(emailsSchema.getSubAttributeSchema("primary"), primarySubAttr);
+                complexEmail.setSubAttribute(primarySubAttr);
+                setPrimary = false;
+            }
+
+            DefaultAttributeFactory.createAttribute(emailsSchema, complexEmail);
+            emailsMultiValued.setAttributeValue(complexEmail);
+        }
     }
 }
