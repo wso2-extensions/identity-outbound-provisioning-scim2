@@ -96,7 +96,8 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         authMode.setOptions(new String[]{
                 AuthenticationType.BASIC.getValue(),
                 AuthenticationType.BEARER.getValue(),
-                AuthenticationType.API_KEY.getValue()
+                AuthenticationType.API_KEY.getValue(),
+                AuthenticationType.CLIENT_CREDENTIALS.getValue()
         });
         authMode.setDefaultValue(AuthenticationType.BASIC.getValue());
 
@@ -142,24 +143,55 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         apiKeyValue.setType("string");
         apiKeyValue.setConfidential(true);
 
+        Property oauthTokenEndpoint = new Property();
+        oauthTokenEndpoint.setName(SCIM2ProvisioningConnectorConstants.SCIM2_OAUTH_TOKEN_ENDPOINT);
+        oauthTokenEndpoint.setDisplayName("OAuth Token Endpoint URL");
+        oauthTokenEndpoint.setDisplayOrder(7);
+        oauthTokenEndpoint.setRequired(false);
+        oauthTokenEndpoint.setType("string");
+
+        Property oauthClientId = new Property();
+        oauthClientId.setName(SCIM2ProvisioningConnectorConstants.SCIM2_OAUTH_CLIENT_ID);
+        oauthClientId.setDisplayName("OAuth Client ID");
+        oauthClientId.setDisplayOrder(8);
+        oauthClientId.setRequired(false);
+        oauthClientId.setType("string");
+        oauthClientId.setConfidential(true);
+
+        Property oauthClientSecret = new Property();
+        oauthClientSecret.setName(SCIM2ProvisioningConnectorConstants.SCIM2_OAUTH_CLIENT_SECRET);
+        oauthClientSecret.setDisplayName("OAuth Client Secret");
+        oauthClientSecret.setDisplayOrder(9);
+        oauthClientSecret.setRequired(false);
+        oauthClientSecret.setType("string");
+        oauthClientSecret.setConfidential(true);
+
+        Property oauthScope = new Property();
+        oauthScope.setName(SCIM2ProvisioningConnectorConstants.SCIM2_OAUTH_SCOPE);
+        oauthScope.setDisplayName("OAuth Scope");
+        oauthScope.setDescription("Optional, space-separated list of scopes");
+        oauthScope.setDisplayOrder(10);
+        oauthScope.setRequired(false);
+        oauthScope.setType("string");
+
         Property userEndpoint = new Property();
         userEndpoint.setName(SCIM2ProvisioningConnectorConstants.SCIM2_USER_EP);
         userEndpoint.setDisplayName("User Endpoint");
-        userEndpoint.setDisplayOrder(7);
+        userEndpoint.setDisplayOrder(11);
         userEndpoint.setRequired(true);
         userEndpoint.setType("string");
 
         Property groupEndpoint = new Property();
         groupEndpoint.setName(SCIM2ProvisioningConnectorConstants.SCIM2_GROUP_EP);
         groupEndpoint.setDisplayName("Group Endpoint");
-        groupEndpoint.setDisplayOrder(8);
+        groupEndpoint.setDisplayOrder(12);
         groupEndpoint.setType("string");
         groupEndpoint.setRequired(false);
 
         Property userStoreDomain = new Property();
         userStoreDomain.setName(SCIM2ProvisioningConnectorConstants.SCIM2_USERSTORE_DOMAIN);
         userStoreDomain.setDisplayName("User Store Domain");
-        userStoreDomain.setDisplayOrder(9);
+        userStoreDomain.setDisplayOrder(13);
         userStoreDomain.setRequired(false);
         userStoreDomain.setType("string");
 
@@ -167,7 +199,7 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         passwordProvisioning.setName(SCIM2ProvisioningConnectorConstants.SCIM2_ENABLE_PASSWORD_PROVISIONING);
         passwordProvisioning.setDisplayName("Enable Password Provisioning");
         passwordProvisioning.setDescription("Enable User password provisioning to a SCIM2 domain");
-        passwordProvisioning.setDisplayOrder(10);
+        passwordProvisioning.setDisplayOrder(14);
         passwordProvisioning.setRequired(false);
         passwordProvisioning.setType("boolean");
         passwordProvisioning.setDefaultValue("true");
@@ -175,7 +207,7 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         SubProperty defaultPassword = new SubProperty();
         defaultPassword.setName(SCIM2ProvisioningConnectorConstants.SCIM2_DEFAULT_PASSWORD);
         defaultPassword.setDisplayName("Default Password");
-        defaultPassword.setDisplayOrder(11);
+        defaultPassword.setDisplayOrder(15);
         defaultPassword.setRequired(false);
         defaultPassword.setType("string");
         defaultPassword.setConfidential(true);
@@ -187,6 +219,10 @@ public class SCIM2ProvisioningConnectorFactory extends AbstractProvisioningConne
         properties.add(accessToken);
         properties.add(apiKeyHeader);
         properties.add(apiKeyValue);
+        properties.add(oauthTokenEndpoint);
+        properties.add(oauthClientId);
+        properties.add(oauthClientSecret);
+        properties.add(oauthScope);
         properties.add(userEndpoint);
         properties.add(groupEndpoint);
         properties.add(userStoreDomain);

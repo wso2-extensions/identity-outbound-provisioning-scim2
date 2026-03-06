@@ -88,6 +88,10 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             String accessToken = null;
             String apiKeyHeader = null;
             String apiKeyValue = null;
+            String oauthTokenEndpoint = null;
+            String oauthClientId = null;
+            String oauthClientSecret = null;
+            String oauthScope = null;
 
             for (Property property : provisioningProperties) {
                 if (SCIM2ProvisioningConnectorConstants.SCIM2_USER_EP.equals(property.getName())) {
@@ -107,6 +111,14 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                     apiKeyHeader = property.getValue() != null ? property.getValue() : property.getDefaultValue();
                 } else if (SCIM2ProvisioningConnectorConstants.SCIM2_API_KEY_VALUE.equals(property.getName())) {
                     apiKeyValue = property.getValue() != null ? property.getValue() : property.getDefaultValue();
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_OAUTH_TOKEN_ENDPOINT.equals(property.getName())) {
+                    oauthTokenEndpoint = property.getValue() != null ? property.getValue() : property.getDefaultValue();
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_OAUTH_CLIENT_ID.equals(property.getName())) {
+                    oauthClientId = property.getValue() != null ? property.getValue() : property.getDefaultValue();
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_OAUTH_CLIENT_SECRET.equals(property.getName())) {
+                    oauthClientSecret = property.getValue() != null ? property.getValue() : property.getDefaultValue();
+                } else if (SCIM2ProvisioningConnectorConstants.SCIM2_OAUTH_SCOPE.equals(property.getName())) {
+                    oauthScope = property.getValue() != null ? property.getValue() : property.getDefaultValue();
                 } else if (SCIM2ProvisioningConnectorConstants.SCIM2_USERSTORE_DOMAIN.equals(property.getName())) {
                     userStoreDomainName = property.getValue() != null ? property.getValue()
                             : property.getDefaultValue();
@@ -125,21 +137,28 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             }
 
             // Configure authentication based on type.
-            configureAuthentication(username, password, accessToken, apiKeyHeader, apiKeyValue);
+            configureAuthentication(username, password, accessToken, apiKeyHeader, apiKeyValue,
+                    oauthTokenEndpoint, oauthClientId, oauthClientSecret, oauthScope);
         }
     }
 
     /**
      * Configure authentication on the SCIM provider based on authentication type.
      *
-     * @param username       Username for BASIC auth.
-     * @param password       Password for BASIC auth.
-     * @param accessToken    Access token for BEARER auth.
-     * @param apiKeyHeader   API key header name for API_KEY auth.
-     * @param apiKeyValue    API key value for API_KEY auth.
+     * @param username            Username for BASIC auth.
+     * @param password            Password for BASIC auth.
+     * @param accessToken         Access token for BEARER auth.
+     * @param apiKeyHeader        API key header name for API_KEY auth.
+     * @param apiKeyValue         API key value for API_KEY auth.
+     * @param oauthTokenEndpoint  OAuth token endpoint for CLIENT_CREDENTIALS auth.
+     * @param oauthClientId       OAuth client ID for CLIENT_CREDENTIALS auth.
+     * @param oauthClientSecret   OAuth client secret for CLIENT_CREDENTIALS auth.
+     * @param oauthScope          OAuth scope for CLIENT_CREDENTIALS auth.
      */
     private void configureAuthentication(String username, String password, String accessToken,
-                                        String apiKeyHeader, String apiKeyValue) {
+                                        String apiKeyHeader, String apiKeyValue,
+                                        String oauthTokenEndpoint, String oauthClientId,
+                                        String oauthClientSecret, String oauthScope) {
 
         // Parse authentication type from string value, default to BASIC if not specified.
         AuthenticationType authType = StringUtils.isBlank(authenticationType) ?
@@ -173,6 +192,21 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                 } else {
                     log.warn("API_KEY authentication requires both header name and value. " +
                             "Skipping authentication configuration.");
+                }
+                break;
+            case CLIENT_CREDENTIALS:
+                if (StringUtils.isNotBlank(oauthTokenEndpoint) && StringUtils.isNotBlank(oauthClientId)
+                        && StringUtils.isNotBlank(oauthClientSecret)) {
+                    SCIM2OAuth2TokenManager tokenManager = new SCIM2OAuth2TokenManager(
+                            oauthTokenEndpoint, oauthClientId, oauthClientSecret, oauthScope);
+                    scimProvider.setTokenManager(tokenManager);
+                    scimProvider.setProperty(SCIM2CommonConstants.AUTHENTICATION_TYPE, authType.getValue());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Configured CLIENT_CREDENTIALS authentication for SCIM2 provisioning");
+                    }
+                } else {
+                    log.warn("CLIENT_CREDENTIALS authentication requires token endpoint, client ID, " +
+                            "and client secret. Skipping authentication configuration.");
                 }
                 break;
             case NONE:
