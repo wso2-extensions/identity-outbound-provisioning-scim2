@@ -55,7 +55,7 @@ public class SCIM2ProvisioningConnectorFactoryTest {
 
         // Verify properties are returned.
         Assert.assertNotNull(properties);
-        Assert.assertEquals(properties.size(), 10, "Should have 10 configuration properties");
+        Assert.assertEquals(properties.size(), 14, "Should have 14 configuration properties");
     }
 
     @Test
