@@ -18,7 +18,9 @@
 
 package org.wso2.carbon.identity.provisioning.connector.scim2;
 
+import io.scim2.swagger.client.ScimApiException;
 import org.apache.commons.collections.CollectionUtils;
+import org.json.JSONObject;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -141,9 +143,16 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
     private void configureAuthentication(String username, String password, String accessToken,
                                         String apiKeyHeader, String apiKeyValue) {
 
-        // Parse authentication type from string value, default to BASIC if not specified.
-        AuthenticationType authType = StringUtils.isBlank(authenticationType) ?
-                AuthenticationType.BASIC : AuthenticationType.fromValue(authenticationType);
+        // Parse authentication type from string value, default to BASIC if not specified or invalid.
+        AuthenticationType authType = AuthenticationType.BASIC;
+        if (!StringUtils.isBlank(authenticationType)) {
+            try {
+                authType = AuthenticationType.fromValue(authenticationType);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid authentication type configured for SCIM2 provisioning connector: " +
+                        authenticationType + ". Defaulting to BASIC authentication.");
+            }
+        }
 
         switch (authType) {
             case BASIC:
@@ -298,7 +307,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             scimProvisioningClient.provisionCreateUser();
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while creating the user : " +
-                    SCIM2ConnectorUtil.maskIfRequired(userName), e);
+                    SCIM2ConnectorUtil.maskIfRequired(userName) + extractScimErrorDetails(e), e);
         }
     }
 
@@ -322,7 +331,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             scimProvsioningClient.provisionDeleteUser();
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while deleting user : " +
-                    SCIM2ConnectorUtil.maskIfRequired(userName), e);
+                    SCIM2ConnectorUtil.maskIfRequired(userName) + extractScimErrorDetails(e), e);
         }
     }
 
@@ -385,7 +394,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             }
         } catch (Exception e) {
             throw new IdentityProvisioningException("Error while updating the user : " +
-                    SCIM2ConnectorUtil.maskIfRequired(userName), e);
+                    SCIM2ConnectorUtil.maskIfRequired(userName) + extractScimErrorDetails(e), e);
         }
     }
 
@@ -412,7 +421,8 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, group, null);
             scimProvsioningClient.provisionCreateGroup();
         } catch (Exception e) {
-            throw new IdentityProvisioningException("Error while adding group : " + groupName, e);
+            throw new IdentityProvisioningException("Error while adding group : " + groupName +
+                    extractScimErrorDetails(e), e);
         }
         return null;
     }
@@ -438,7 +448,8 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             ProvisioningClient scimProvsioningClient = new ProvisioningClient(scimProvider, group, null);
             scimProvsioningClient.provisionDeleteGroup();
         } catch (Exception e) {
-            throw new IdentityProvisioningException("Error while deleting group : " + groupName, e);
+            throw new IdentityProvisioningException("Error while deleting group : " + groupName +
+                    extractScimErrorDetails(e), e);
         }
     }
 
@@ -521,7 +532,8 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             }
         } catch (Exception e) {
             String groupDisplayName = oldGroupName != null ? oldGroupName : groupName;
-            throw new IdentityProvisioningException("Error while updating group : " + groupDisplayName, e);
+            throw new IdentityProvisioningException("Error while updating group : " + groupDisplayName +
+                    extractScimErrorDetails(e), e);
         }
     }
 
@@ -655,6 +667,57 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             simpleAttribute = (SimpleAttribute) DefaultAttributeFactory.
                     createAttribute(SCIMSchemaDefinitions.SCIMUserSchemaDefinition.PASSWORD, simpleAttribute);
             user.getAttributeList().put(SCIMConstants.UserSchemaConstants.PASSWORD, simpleAttribute);
+        }
+    }
+
+    /**
+     * Extracts HTTP status and scimType from a {@link ScimApiException} in the cause chain.
+     *
+     * @param e The exception to inspect.
+     * @return A string like " [HTTP 409, scimType: uniqueness]" or "" if no SCIM error is found.
+     */
+    private static String extractScimErrorDetails(Exception e) {
+
+        Throwable cause = e;
+        while (cause != null) {
+            if (cause instanceof ScimApiException) {
+                ScimApiException scimEx = (ScimApiException) cause;
+                StringBuilder details = new StringBuilder();
+                if (scimEx.getCode() != 0) {
+                    details.append(" [HTTP ").append(scimEx.getCode());
+                    String scimType = extractScimType(scimEx.getResponseBody());
+                    if (scimType != null) {
+                        details.append(", scimType: ").append(scimType);
+                    }
+                    details.append("]");
+                }
+                return details.toString();
+            }
+            Throwable next = cause.getCause();
+            if (next == cause) {
+                break;
+            }
+            cause = next;
+        }
+        return "";
+    }
+
+    /**
+     * Parses the scimType field from a SCIM error response body.
+     *
+     * @param responseBody The raw JSON response body from the SCIM provider.
+     * @return The scimType value (e.g. "uniqueness", "invalidValue") or null.
+     */
+    private static String extractScimType(String responseBody) {
+
+        if (StringUtils.isBlank(responseBody)) {
+            return null;
+        }
+        try {
+            String scimType = new JSONObject(responseBody).optString("scimType", null);
+            return StringUtils.isBlank(scimType) ? null : scimType;
+        } catch (Exception ex) {
+            return null;
         }
     }
 
