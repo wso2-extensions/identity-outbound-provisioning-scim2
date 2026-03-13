@@ -348,7 +348,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
         try {
             List<String> userNames = getUserNames(userEntity.getAttributes());
             if (CollectionUtils.isNotEmpty(userNames)) {
-                userName = extractDomainFreeName(userNames.get(0));
+                userName = userNames.get(0);
             }
 
             // Get single-valued claims.
@@ -359,17 +359,18 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                     SCIM2ConnectorUtil.isSCIMPatchEnabledForUpdates();
 
             User user;
-            if (shouldUsePatch) {
-                // For PATCH operation, construct User object and convert its attributes to patch operations.
-                if (MapUtils.isNotEmpty(singleValued)) {
-                    user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
-                } else {
-                    user = new User();
-                }
-                user.setUserName(userName);
+            if (MapUtils.isNotEmpty(singleValued)) {
+                user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
+            } else {
+                user = new User();
+            }
 
+            if (shouldUsePatch) {
+                // Build patch operations before setting userName so it's not sent as a patch.
+                // userName is only needed to identify the user for the PATCH request.
                 Map<String, Object> additionalInformation = new HashMap<>();
                 List<PatchOperation> patchOperations = SCIM2ConnectorUtil.buildPatchOperationsFromUser(user);
+                user.setUserName(userName);
 
                 if (CollectionUtils.isEmpty(patchOperations)) {
                     log.warn("No patch operations to perform for user: " +
@@ -382,13 +383,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                         additionalInformation);
                 scimProvisioningClient.provisionPatchUser();
             } else if (ProvisioningOperation.PUT.equals(provisioningOperation)) {
-                // For PUT operation (when PATCH is disabled), construct full User object.
-                if (MapUtils.isNotEmpty(singleValued)) {
-                    user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
-                } else {
-                    user = new User();
-                }
-                user.setUserName(userName);
+                user.setUserName(extractDomainFreeName(userName));
                 ProvisioningClient scimProvisioningClient = new ProvisioningClient(scimProvider, user, null);
                 scimProvisioningClient.provisionUpdateUser();
             }
@@ -739,6 +734,9 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
      */
     private String extractDomainFreeName(String nameWithDomain) {
 
+        if (StringUtils.isBlank(nameWithDomain)) {
+            return nameWithDomain;
+        }
         int domainSeparatorIdx = nameWithDomain.indexOf(UserCoreConstants.DOMAIN_SEPARATOR);
         if (domainSeparatorIdx > 0) {
             String[] names = nameWithDomain.split(UserCoreConstants.DOMAIN_SEPARATOR);
