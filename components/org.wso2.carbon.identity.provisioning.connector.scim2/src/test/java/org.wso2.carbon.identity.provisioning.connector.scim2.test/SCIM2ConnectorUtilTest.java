@@ -32,6 +32,7 @@ import org.wso2.carbon.identity.scim2.common.impl.IdentitySCIMManager;
 import org.wso2.carbon.identity.scim2.common.utils.AttributeMapper;
 import org.wso2.carbon.identity.scim2.common.utils.SCIMCommonUtils;
 import org.wso2.charon3.core.attributes.Attribute;
+import org.wso2.charon3.core.attributes.ComplexAttribute;
 import org.wso2.charon3.core.attributes.SimpleAttribute;
 import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.extensions.UserManager;
@@ -180,6 +181,145 @@ public class SCIM2ConnectorUtilTest {
         // Verify empty list is returned.
         assertNotNull(patchOperations, "Patch operations should not be null");
         assertTrue(patchOperations.isEmpty(), "Patch operations should be empty for user with empty attributes");
+    }
+
+    @Test
+    public void testBuildPatchOperationsFromUserWithComplexAttribute() throws CharonException {
+
+        // Create a User with a non-multi-valued complex attribute (e.g., name).
+        User user = Mockito.mock(User.class);
+        Map<String, Attribute> attributeList = new HashMap<>();
+
+        // Create a complex "name" attribute with sub-attributes familyName and givenName.
+        ComplexAttribute nameAttr = Mockito.mock(ComplexAttribute.class);
+        Mockito.when(nameAttr.getName()).thenReturn(SCIMConstants.UserSchemaConstants.NAME);
+        Mockito.when(nameAttr.getMultiValued()).thenReturn(false);
+
+        Map<String, Attribute> subAttributes = new HashMap<>();
+
+        SimpleAttribute familyNameAttr = Mockito.mock(SimpleAttribute.class);
+        Mockito.when(familyNameAttr.getName()).thenReturn(SCIMConstants.UserSchemaConstants.FAMILY_NAME);
+        Mockito.when(familyNameAttr.getValue()).thenReturn("Smith");
+        subAttributes.put(SCIMConstants.UserSchemaConstants.FAMILY_NAME, familyNameAttr);
+
+        SimpleAttribute givenNameAttr = Mockito.mock(SimpleAttribute.class);
+        Mockito.when(givenNameAttr.getName()).thenReturn(SCIMConstants.UserSchemaConstants.GIVEN_NAME);
+        Mockito.when(givenNameAttr.getValue()).thenReturn("John");
+        subAttributes.put(SCIMConstants.UserSchemaConstants.GIVEN_NAME, givenNameAttr);
+
+        Mockito.when(nameAttr.getSubAttributesList()).thenReturn(subAttributes);
+        attributeList.put(SCIMConstants.UserSchemaConstants.NAME, nameAttr);
+
+        Mockito.when(user.getAttributeList()).thenReturn(attributeList);
+
+        // Build patch operations.
+        List<PatchOperation> patchOperations = SCIM2ConnectorUtil.buildPatchOperationsFromUser(user);
+
+        // Verify sub-attribute level patch operations are created.
+        assertNotNull(patchOperations, "Patch operations should not be null");
+        assertEquals(patchOperations.size(), 2, "Should have 2 patch operations for name sub-attributes");
+
+        // Verify each operation uses dotted sub-attribute paths.
+        Map<String, Object> pathValueMap = new HashMap<>();
+        for (PatchOperation op : patchOperations) {
+            assertEquals(op.getOperation(), SCIMConstants.OperationalConstants.REPLACE,
+                    "Operation should be REPLACE");
+            pathValueMap.put(op.getPath(), op.getValues());
+        }
+
+        assertTrue(pathValueMap.containsKey("name.familyName"),
+                "Should have patch operation for name.familyName");
+        assertEquals(pathValueMap.get("name.familyName"), "Smith",
+                "name.familyName value should be Smith");
+
+        assertTrue(pathValueMap.containsKey("name.givenName"),
+                "Should have patch operation for name.givenName");
+        assertEquals(pathValueMap.get("name.givenName"), "John",
+                "name.givenName value should be John");
+    }
+
+    @Test
+    public void testBuildPatchOperationsFromUserWithExtensionComplexSubAttribute() throws CharonException {
+
+        // Create a User with an extension schema attribute containing a complex sub-attribute (e.g., manager).
+        User user = Mockito.mock(User.class);
+        Map<String, Attribute> attributeList = new HashMap<>();
+
+        String enterpriseSchemaUri = SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_ENTERPRISE_DIALECT;
+        scimCommonUtilsMock.when(SCIMCommonUtils::getCustomSchemaURI).thenReturn(null);
+
+        // Create the extension schema top-level complex attribute.
+        ComplexAttribute extensionAttr = Mockito.mock(ComplexAttribute.class);
+        Mockito.when(extensionAttr.getName()).thenReturn(enterpriseSchemaUri);
+        Mockito.when(extensionAttr.getMultiValued()).thenReturn(false);
+
+        Map<String, Attribute> extensionSubAttributes = new HashMap<>();
+
+        // Add a simple sub-attribute (department).
+        SimpleAttribute departmentAttr = Mockito.mock(SimpleAttribute.class);
+        Mockito.when(departmentAttr.getName()).thenReturn("department");
+        Mockito.when(departmentAttr.getValue()).thenReturn("Engineering");
+        Mockito.when(departmentAttr.getMultiValued()).thenReturn(false);
+        extensionSubAttributes.put("department", departmentAttr);
+
+        // Add a complex non-multi-valued sub-attribute (manager) with sub-sub-attributes.
+        ComplexAttribute managerAttr = Mockito.mock(ComplexAttribute.class);
+        Mockito.when(managerAttr.getName()).thenReturn("manager");
+        Mockito.when(managerAttr.getMultiValued()).thenReturn(false);
+
+        Map<String, Attribute> managerSubAttributes = new HashMap<>();
+        SimpleAttribute managerDisplayName = Mockito.mock(SimpleAttribute.class);
+        Mockito.when(managerDisplayName.getName()).thenReturn("displayName");
+        Mockito.when(managerDisplayName.getValue()).thenReturn("Jane Manager");
+        managerSubAttributes.put("displayName", managerDisplayName);
+
+        SimpleAttribute managerValue = Mockito.mock(SimpleAttribute.class);
+        Mockito.when(managerValue.getName()).thenReturn("value");
+        Mockito.when(managerValue.getValue()).thenReturn("user123");
+        managerSubAttributes.put("value", managerValue);
+
+        Mockito.when(managerAttr.getSubAttributesList()).thenReturn(managerSubAttributes);
+        extensionSubAttributes.put("manager", managerAttr);
+
+        Mockito.when(extensionAttr.getSubAttributesList()).thenReturn(extensionSubAttributes);
+        attributeList.put(enterpriseSchemaUri, extensionAttr);
+
+        Mockito.when(user.getAttributeList()).thenReturn(attributeList);
+
+        // Build patch operations.
+        List<PatchOperation> patchOperations = SCIM2ConnectorUtil.buildPatchOperationsFromUser(user);
+
+        // Verify patch operations.
+        assertNotNull(patchOperations, "Patch operations should not be null");
+        assertEquals(patchOperations.size(), 3,
+                "Should have 3 patch operations: department + manager.displayName + manager.value");
+
+        Map<String, Object> pathValueMap = new HashMap<>();
+        for (PatchOperation op : patchOperations) {
+            assertEquals(op.getOperation(), SCIMConstants.OperationalConstants.REPLACE,
+                    "Operation should be REPLACE");
+            pathValueMap.put(op.getPath(), op.getValues());
+        }
+
+        // Verify simple extension sub-attribute.
+        String departmentPath = enterpriseSchemaUri + ":department";
+        assertTrue(pathValueMap.containsKey(departmentPath),
+                "Should have patch operation for department");
+        assertEquals(pathValueMap.get(departmentPath), "Engineering",
+                "department value should be Engineering");
+
+        // Verify complex extension sub-attribute is split into sub-sub-attribute paths.
+        String managerDisplayNamePath = enterpriseSchemaUri + ":manager.displayName";
+        assertTrue(pathValueMap.containsKey(managerDisplayNamePath),
+                "Should have patch operation for manager.displayName");
+        assertEquals(pathValueMap.get(managerDisplayNamePath), "Jane Manager",
+                "manager.displayName value should be Jane Manager");
+
+        String managerValuePath = enterpriseSchemaUri + ":manager.value";
+        assertTrue(pathValueMap.containsKey(managerValuePath),
+                "Should have patch operation for manager.value");
+        assertEquals(pathValueMap.get(managerValuePath), "user123",
+                "manager.value value should be user123");
     }
 
     @Test
