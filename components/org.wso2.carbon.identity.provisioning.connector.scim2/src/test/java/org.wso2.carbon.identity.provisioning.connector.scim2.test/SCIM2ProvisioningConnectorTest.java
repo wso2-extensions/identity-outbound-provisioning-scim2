@@ -400,11 +400,11 @@ public class SCIM2ProvisioningConnectorTest {
         assertTrue(patchOps.stream().anyMatch(op -> "nickName".equals(op.getPath()) &&
                 "JD".equals(op.getValues())), "Should have nickName");
 
-        // Verify core complex attribute.
-        Optional<PatchOperation> nameOp = patchOps.stream()
-                .filter(op -> "name".equals(op.getPath())).findFirst();
-        assertTrue(nameOp.isPresent(), "Should have name operation");
-        assertNotNull(nameOp.get().getValues(), "Name value should not be null");
+        // Verify core complex attribute is split into sub-attribute level operations.
+        assertTrue(patchOps.stream().anyMatch(op -> "name.familyName".equals(op.getPath()) &&
+                "Doe".equals(op.getValues())), "Should have name.familyName operation");
+        assertTrue(patchOps.stream().anyMatch(op -> "name.givenName".equals(op.getPath()) &&
+                "John".equals(op.getValues())), "Should have name.givenName operation");
 
         // Verify core multi-valued attribute.
         Optional<PatchOperation> emailsOp = patchOps.stream()
@@ -420,17 +420,13 @@ public class SCIM2ProvisioningConnectorTest {
                 "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber".equals(op.getPath()) &&
                 "EMP001".equals(op.getValues())), "Should have employeeNumber with full path");
 
-        // Verify extension complex attribute.
-        Optional<PatchOperation> managerOp = patchOps.stream()
-                .filter(op -> "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager".equals(op.getPath()))
-                .findFirst();
-        assertTrue(managerOp.isPresent(), "Should have manager operation");
-        Object managerValue = managerOp.get().getValues();
-        assertNotNull(managerValue, "Manager value should not be null");
-        assertTrue(managerValue instanceof JSONObject, "Manager should be JSONObject");
-        JSONObject managerJson = (JSONObject) managerValue;
-        assertEquals(managerJson.getString("value"), "manager-id-123");
-        assertEquals(managerJson.getString("displayName"), "Manager Name");
+        // Verify extension complex attribute is split into sub-sub-attribute level operations.
+        assertTrue(patchOps.stream().anyMatch(op ->
+                "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager.value".equals(op.getPath()) &&
+                "manager-id-123".equals(op.getValues())), "Should have manager.value operation");
+        assertTrue(patchOps.stream().anyMatch(op ->
+                "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager.displayName".equals(op.getPath()) &&
+                "Manager Name".equals(op.getValues())), "Should have manager.displayName operation");
 
         // Verify all operations are REPLACE with proper structure.
         for (PatchOperation op : patchOps) {

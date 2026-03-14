@@ -116,8 +116,14 @@ public class SCIM2ConnectorUtil {
                     // For extension schemas, create patch operations for each sub-attribute.
                     buildExtensionSchemaPatchOperations((ComplexAttribute) attribute, attributeName,
                             patchOperations, encoder);
+                } else if (attribute instanceof ComplexAttribute && !Boolean.TRUE.equals(attribute.getMultiValued())) {
+                    // For non-multi-valued complex attributes (e.g., name), create sub-attribute level
+                    // patch operations (e.g., name.familyName, name.givenName) to avoid replacing the
+                    // entire complex attribute and losing sibling sub-attributes.
+                    buildSubAttributePatchOperations((ComplexAttribute) attribute, attributeName,
+                            patchOperations, encoder);
                 } else {
-                    // For core attributes, create a single patch operation.
+                    // For simple attributes and multi-valued attributes, create a single patch operation.
                     Object attributeValue = getAttributeValue(attribute, encoder);
                     if (attributeValue != null) {
                         createAndAddPatchOperation(attributeName, attributeValue, patchOperations);
@@ -200,14 +206,48 @@ public class SCIM2ConnectorUtil {
                 // Build the full path: schema:attributeName.
                 String fullPath = schemaUri + ":" + subAttrName;
 
-                // Extract attribute value and create patch operation.
-                Object value = getAttributeValue(subAttribute, encoder);
-                if (value != null) {
-                    createAndAddPatchOperation(fullPath, value, patchOperations);
+                if (subAttribute instanceof ComplexAttribute && !Boolean.TRUE.equals(subAttribute.getMultiValued())) {
+                    // For non-multi-valued complex sub-attributes (e.g., manager), create sub-sub-attribute
+                    // level patch operations (e.g., urn:...:User:manager.displayName) to avoid replacing
+                    // the entire complex sub-attribute and losing sibling sub-attributes.
+                    buildSubAttributePatchOperations((ComplexAttribute) subAttribute, fullPath,
+                            patchOperations, encoder);
+                } else {
+                    // For simple and multi-valued sub-attributes, create a single patch operation.
+                    Object value = getAttributeValue(subAttribute, encoder);
+                    if (value != null) {
+                        createAndAddPatchOperation(fullPath, value, patchOperations);
+                    }
                 }
             }
         } catch (Exception e) {
             log.error("Error building extension schema patch operations for schema: " + schemaUri, e);
+        }
+    }
+
+    /**
+     * Builds PATCH operations for each sub-attribute of a non-multi-valued complex attribute using
+     * dotted paths (e.g., name.familyName, urn:...:User:manager.displayName). This avoids replacing
+     * the entire complex attribute and losing sibling sub-attributes that are not included in the update.
+     *
+     * @param complexAttribute The complex attribute whose sub-attributes should be patched individually.
+     * @param parentPath       The parent path prefix (e.g., "name" or "urn:...:User:manager").
+     * @param patchOperations  List to add patch operations to.
+     * @param encoder          JSONEncoder for encoding attribute values.
+     */
+    private static void buildSubAttributePatchOperations(ComplexAttribute complexAttribute, String parentPath,
+                                                          List<PatchOperation> patchOperations, JSONEncoder encoder) {
+
+        Map<String, Attribute> subAttrs = complexAttribute.getSubAttributesList();
+        if (subAttrs == null || subAttrs.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, Attribute> sub : subAttrs.entrySet()) {
+            String subPath = parentPath + "." + sub.getKey();
+            Object subValue = getAttributeValue(sub.getValue(), encoder);
+            if (subValue != null) {
+                createAndAddPatchOperation(subPath, subValue, patchOperations);
+            }
         }
     }
 
