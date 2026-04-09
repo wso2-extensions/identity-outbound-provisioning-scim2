@@ -171,7 +171,8 @@ public class SCIM2ConnectorUtil {
         // First check against registered extension dialect URIs.
         String[] extensionDialectUris = {
                 SCIM2ProvisioningConnectorConstants.DEFAULT_SCIM2_ENTERPRISE_DIALECT,
-                SCIMCommonUtils.getCustomSchemaURI()
+                SCIMCommonUtils.getCustomSchemaURI(),
+                SCIM2ProvisioningConnectorConstants.SCIM_SYSTEM_USER_CLAIM_DIALECT
         };
 
         return Arrays.stream(extensionDialectUris)

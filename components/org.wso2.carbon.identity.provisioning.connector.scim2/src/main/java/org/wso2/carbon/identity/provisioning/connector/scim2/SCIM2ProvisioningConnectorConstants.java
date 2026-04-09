@@ -45,6 +45,7 @@ public class SCIM2ProvisioningConnectorConstants {
     public static final String DEFAULT_SCIM2_USER_DIALECT = "urn:ietf:params:scim:schemas:core:2.0:User";
     public static final String DEFAULT_SCIM2_ENTERPRISE_DIALECT
             = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User";
+    public static final String SCIM_SYSTEM_USER_CLAIM_DIALECT = "urn:scim:wso2:schema";
 
     public static final String DEFAULT = "default";
     public static final String ATTRIBUTE_TYPE = ".type";
