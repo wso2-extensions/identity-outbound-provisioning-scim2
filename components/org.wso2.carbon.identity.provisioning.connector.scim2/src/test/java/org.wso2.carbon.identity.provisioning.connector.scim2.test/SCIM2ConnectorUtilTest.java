@@ -41,8 +41,12 @@ import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.extensions.UserManager;
 import org.wso2.charon3.core.objects.User;
 import org.wso2.charon3.core.schema.SCIMConstants;
+import org.wso2.charon3.core.schema.SCIMResourceSchemaManager;
+import org.wso2.charon3.core.schema.SCIMResourceTypeSchema;
 import org.wso2.charon3.core.utils.codeutils.PatchOperation;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +55,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 /**
@@ -58,17 +63,32 @@ import static org.testng.Assert.assertTrue;
  */
 public class SCIM2ConnectorUtilTest {
 
+    private static final String ENTERPRISE_SCHEMA_URI =
+            "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User";
+    private static final String WSO2_SYSTEM_SCHEMA_URI = "urn:scim:wso2:schema";
+
     private MockedStatic<IdentityUtil> identityUtilMock;
     private MockedStatic<SCIMCommonUtils> scimCommonUtilsMock;
     private MockedStatic<IdentitySCIMManager> identitySCIMManagerMock;
     private MockedStatic<AttributeMapper> attributeMapperMock;
+    private MockedStatic<SCIMResourceSchemaManager> resourceSchemaManagerMock;
+    private SCIMResourceSchemaManager schemaManager;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
         identityUtilMock = Mockito.mockStatic(IdentityUtil.class);
         scimCommonUtilsMock = Mockito.mockStatic(SCIMCommonUtils.class);
         identitySCIMManagerMock = Mockito.mockStatic(IdentitySCIMManager.class);
         attributeMapperMock = Mockito.mockStatic(AttributeMapper.class);
+        resourceSchemaManagerMock = Mockito.mockStatic(SCIMResourceSchemaManager.class);
+
+        // Every construction path resolves the tenant resource type schema; default it to core only and
+        // let the tests that care about extensions override it.
+        schemaManager = Mockito.mock(SCIMResourceSchemaManager.class);
+        resourceSchemaManagerMock.when(SCIMResourceSchemaManager::getInstance).thenReturn(schemaManager);
+        Mockito.when(schemaManager.getUserResourceSchema(any(UserManager.class))).thenReturn(
+                SCIMResourceTypeSchema.createSCIMResourceSchema(
+                        Collections.singletonList(SCIMConstants.USER_CORE_SCHEMA_URI)));
     }
 
     @AfterMethod
@@ -84,6 +104,9 @@ public class SCIM2ConnectorUtilTest {
         }
         if (attributeMapperMock != null) {
             attributeMapperMock.close();
+        }
+        if (resourceSchemaManagerMock != null) {
+            resourceSchemaManagerMock.close();
         }
     }
 
@@ -417,31 +440,70 @@ public class SCIM2ConnectorUtilTest {
     }
 
     @Test
-    public void testConstructUserFromAttributesPopulatesSchemas() throws Exception {
+    public void testConstructUserFromAttributesDeclaresOnlyTheSchemasInUse() throws Exception {
+
+        // The tenant resource type schema offers two extensions; the payload uses only the enterprise one.
+        User user = new User();
+        user.getAttributeList().put(ENTERPRISE_SCHEMA_URI, new ComplexAttribute(ENTERPRISE_SCHEMA_URI));
+        User result = constructUser(user, SCIMConstants.USER_CORE_SCHEMA_URI, ENTERPRISE_SCHEMA_URI,
+                WSO2_SYSTEM_SCHEMA_URI);
+
+        assertEquals(result.getSchemaList(), Arrays.asList(SCIMConstants.USER_CORE_SCHEMA_URI,
+                        ENTERPRISE_SCHEMA_URI),
+                "Only the core schema and the extensions present in the payload should be declared");
+        assertFalse(result.getSchemaList().contains(WSO2_SYSTEM_SCHEMA_URI),
+                "An extension the payload carries no attribute from should not be declared, because a strict " +
+                        "target rejects a schema URI it does not recognise");
+    }
+
+    @Test
+    public void testConstructUserFromAttributesDeclaresCoreSchemaWithNoExtensions() throws Exception {
+
+        User result = constructUser(new User(), SCIMConstants.USER_CORE_SCHEMA_URI, ENTERPRISE_SCHEMA_URI);
+
+        // The encoded payload is what goes on the wire; an empty schemas array is rejected by SCIM targets.
+        JSONArray schemas = new JSONObject(new JSONEncoder().encodeSCIMObject(result))
+                .getJSONArray(SCIMConstants.CommonSchemaConstants.SCHEMAS);
+        assertEquals(schemas.length(), 1, "Encoded user payload should declare exactly the core user schema");
+        assertEquals(schemas.getString(0), SCIMConstants.USER_CORE_SCHEMA_URI,
+                "Encoded user payload should carry the SCIM core user schema URI");
+    }
+
+    @Test
+    public void testConstructUserFromAttributesStripsMeta() throws Exception {
+
+        // meta is read-only and describes this server's copy of the resource, so it must not be provisioned.
+        User user = new User();
+        user.getAttributeList().put(SCIMConstants.CommonSchemaConstants.META,
+                new ComplexAttribute(SCIMConstants.CommonSchemaConstants.META));
+        User result = constructUser(user, SCIMConstants.USER_CORE_SCHEMA_URI);
+
+        assertNull(result.getAttribute(SCIMConstants.CommonSchemaConstants.META),
+                "meta should be removed from the outbound payload");
+        assertFalse(new JSONObject(new JSONEncoder().encodeSCIMObject(result))
+                        .has(SCIMConstants.CommonSchemaConstants.META),
+                "Encoded user payload should not carry meta");
+    }
+
+    /**
+     * Runs constructUserFromAttributes over the given user, with a tenant resource type schema
+     * offering the given schema URIs.
+     */
+    private User constructUser(User user, String... resourceTypeSchemaUris) throws Exception {
 
         Map<String, String> attributes = new HashMap<>();
         attributes.put(SCIMConstants.UserSchemaConstants.USER_NAME, "john.doe");
 
         IdentitySCIMManager scimManager = Mockito.mock(IdentitySCIMManager.class);
         UserManager userManager = Mockito.mock(UserManager.class);
-        User user = new User();
 
         identitySCIMManagerMock.when(IdentitySCIMManager::getInstance).thenReturn(scimManager);
         Mockito.when(scimManager.getUserManager()).thenReturn(userManager);
+        Mockito.when(schemaManager.getUserResourceSchema(any(UserManager.class))).thenReturn(
+                SCIMResourceTypeSchema.createSCIMResourceSchema(Arrays.asList(resourceTypeSchemaUris)));
         attributeMapperMock.when(() -> AttributeMapper.constructSCIMObjectFromAttributes(
                 any(UserManager.class), any(Map.class), Mockito.anyInt())).thenReturn(user);
 
-        User result = SCIM2ConnectorUtil.constructUserFromAttributes(attributes);
-
-        assertTrue(result.getSchemaList().contains(SCIMConstants.USER_CORE_SCHEMA_URI),
-                "Constructed user should carry the SCIM core user schema URI");
-
-        // The encoded payload is what goes on the wire; an empty schemas array is rejected by SCIM targets.
-        String encoded = new JSONEncoder().encodeSCIMObject(result);
-        JSONObject encodedObject = new JSONObject(encoded);
-        JSONArray schemas = encodedObject.getJSONArray(SCIMConstants.CommonSchemaConstants.SCHEMAS);
-        assertTrue(schemas.length() > 0, "Encoded user payload should not carry an empty schemas array");
-        assertEquals(schemas.getString(0), SCIMConstants.USER_CORE_SCHEMA_URI,
-                "Encoded user payload should carry the SCIM core user schema URI");
+        return SCIM2ConnectorUtil.constructUserFromAttributes(attributes);
     }
 }

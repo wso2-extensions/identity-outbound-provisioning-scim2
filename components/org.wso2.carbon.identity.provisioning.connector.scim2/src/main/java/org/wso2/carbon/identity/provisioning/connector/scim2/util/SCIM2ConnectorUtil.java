@@ -44,6 +44,8 @@ import org.wso2.charon3.core.extensions.UserManager;
 import org.wso2.charon3.core.objects.User;
 import org.wso2.charon3.core.schema.AttributeSchema;
 import org.wso2.charon3.core.schema.SCIMConstants;
+import org.wso2.charon3.core.schema.SCIMResourceSchemaManager;
+import org.wso2.charon3.core.schema.SCIMResourceTypeSchema;
 import org.wso2.charon3.core.schema.SCIMSchemaDefinitions;
 import org.wso2.charon3.core.utils.codeutils.PatchOperation;
 
@@ -324,18 +326,47 @@ public class SCIM2ConnectorUtil {
         UserManager userManager = IdentitySCIMManager.getInstance().getUserManager();
         User user = (User) AttributeMapper.constructSCIMObjectFromAttributes(userManager, attributes,
                 SCIM2CommonConstants.USER);
-        // The schemas attribute is REQUIRED by the SCIM 2.0 specification and is not populated by the
-        // attribute mapper, so resolve it from the resource type schema of the tenant.
-        try {
-            user.setSchemas(userManager);
-        } catch (NotImplementedException e) {
-            throw new CharonException("Error while resolving the user schema for the outbound " +
-                    "provisioning payload.", e);
-        }
+        // meta is read-only per the SCIM 2.0 specification and its values describe the resource on this
+        // server, so it is meaningless at the provisioning target.
+        user.deleteAttribute(SCIMConstants.CommonSchemaConstants.META);
+        setSchemasPresentInPayload(user, userManager);
         if (isScimCompliantEmailAttributeEnabled()) {
             ensureScimCompliantEmailAttribute(user);
         }
         return user;
+    }
+
+    /**
+     * Declares the schemas the given user payload actually uses.
+     *
+     * <p>The attribute mapper leaves the schema list empty, and copying the whole resource type schema
+     * would advertise extensions the payload carries no attribute from. The SCIM 2.0 specification
+     * defines schemas as the URIs used in the resource, and a strict target rejects a URI it does not
+     * recognise, so only the core schema and the extensions actually present are declared.</p>
+     *
+     * @param user        The user to set the schemas on.
+     * @param userManager User manager used to resolve the tenant's resource type schema.
+     * @throws CharonException     If the resource type schema cannot be resolved.
+     * @throws BadRequestException If the resource type schema is invalid.
+     */
+    private static void setSchemasPresentInPayload(User user, UserManager userManager)
+            throws CharonException, BadRequestException {
+
+        user.setSchema(SCIMConstants.USER_CORE_SCHEMA_URI);
+
+        SCIMResourceTypeSchema resourceTypeSchema;
+        try {
+            resourceTypeSchema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema(userManager);
+        } catch (NotImplementedException e) {
+            throw new CharonException("Error while resolving the user schema for the outbound " +
+                    "provisioning payload.", e);
+        }
+
+        for (String schemaUri : resourceTypeSchema.getSchemasList()) {
+            if (!SCIMConstants.USER_CORE_SCHEMA_URI.equals(schemaUri) && user.getAttribute(schemaUri) != null) {
+                user.setSchema(schemaUri);
+            }
+        }
     }
 
     /**
