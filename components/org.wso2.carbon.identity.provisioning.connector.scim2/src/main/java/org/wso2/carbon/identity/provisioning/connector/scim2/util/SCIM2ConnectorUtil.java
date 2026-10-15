@@ -314,20 +314,24 @@ public class SCIM2ConnectorUtil {
      *
      * @param attributes Map of attribute URIs to values.
      * @return User object with attributes populated from the map.
-     * @throws CharonException         If there's an error in Charon processing.
-     * @throws BadRequestException     If the attributes are invalid.
-     * @throws NotFoundException       If required resources are not found.
-     * @throws NotImplementedException If the user schema cannot be resolved.
+     * @throws CharonException     If there's an error in Charon processing.
+     * @throws BadRequestException If the attributes are invalid.
+     * @throws NotFoundException   If required resources are not found.
      */
     public static User constructUserFromAttributes(Map<String, String> attributes)
-            throws CharonException, BadRequestException, NotFoundException, NotImplementedException {
+            throws CharonException, BadRequestException, NotFoundException {
 
         UserManager userManager = IdentitySCIMManager.getInstance().getUserManager();
         User user = (User) AttributeMapper.constructSCIMObjectFromAttributes(userManager, attributes,
                 SCIM2CommonConstants.USER);
         // The schemas attribute is REQUIRED by the SCIM 2.0 specification and is not populated by the
         // attribute mapper, so resolve it from the resource type schema of the tenant.
-        user.setSchemas(userManager);
+        try {
+            user.setSchemas(userManager);
+        } catch (NotImplementedException e) {
+            throw new CharonException("Error while resolving the user schema for the outbound " +
+                    "provisioning payload.", e);
+        }
         if (isScimCompliantEmailAttributeEnabled()) {
             ensureScimCompliantEmailAttribute(user);
         }
