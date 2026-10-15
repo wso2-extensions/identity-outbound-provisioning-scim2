@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.provisioning.connector.scim2.test;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
@@ -39,6 +40,7 @@ import org.wso2.carbon.identity.scim2.common.impl.IdentitySCIMManager;
 import org.wso2.carbon.identity.scim2.common.utils.AttributeMapper;
 import org.wso2.carbon.identity.scim2.common.utils.SCIMCommonUtils;
 import org.wso2.charon3.core.attributes.SimpleAttribute;
+import org.wso2.charon3.core.encoder.JSONEncoder;
 import org.wso2.charon3.core.extensions.UserManager;
 import org.wso2.charon3.core.objects.Group;
 import org.wso2.charon3.core.objects.User;
@@ -758,5 +760,52 @@ public class SCIM2ProvisioningConnectorTest {
             ProvisioningClient client = mocked.constructed().get(0);
             Mockito.verify(client, Mockito.times(1)).provisionPatchGroup();
         }
+    }
+
+    @Test(dataProvider = "groupProvisioningOperations")
+    public void testGroupPayloadCarriesSchemas(ProvisioningOperation operation) throws Exception {
+
+        List<Group> provisionedGroups = new ArrayList<>();
+        try (MockedConstruction<ProvisioningClient> mocked = Mockito.mockConstruction(ProvisioningClient.class,
+                (mock, context) -> provisionedGroups.add((Group) context.arguments().get(1)))) {
+            sCIM2ProvisioningConnector.init(new Property[0]);
+            Map<ClaimMapping, List<String>> attributes = new HashMap<>();
+            List<String> value = new ArrayList<>();
+            value.add("testGroup");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI, null, null,
+                    false), value);
+            ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP, operation,
+                    attributes);
+
+            if (ProvisioningOperation.POST.equals(operation)) {
+                Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("createGroup",
+                        ProvisioningEntity.class);
+                method.setAccessible(true);
+                method.invoke(sCIM2ProvisioningConnector, groupEntity);
+            } else {
+                Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("updateGroup",
+                        ProvisioningEntity.class, ProvisioningOperation.class);
+                method.setAccessible(true);
+                method.invoke(sCIM2ProvisioningConnector, groupEntity, operation);
+            }
+        }
+
+        assertFalse(provisionedGroups.isEmpty(), "A group should have been handed to the provisioning client");
+        Group group = provisionedGroups.get(0);
+        assertTrue(group.getSchemaList().contains(SCIMConstants.GROUP_CORE_SCHEMA_URI),
+                "Provisioned group should carry the SCIM core group schema URI");
+
+        // The encoded payload is what goes on the wire; an empty schemas array is rejected by SCIM targets.
+        JSONArray schemas = new JSONObject(new JSONEncoder().encodeSCIMObject(group))
+                .getJSONArray(SCIMConstants.CommonSchemaConstants.SCHEMAS);
+        assertEquals(schemas.length(), 1, "Encoded group payload should carry exactly the core group schema");
+        assertEquals(schemas.getString(0), SCIMConstants.GROUP_CORE_SCHEMA_URI,
+                "Encoded group payload should carry the SCIM core group schema URI");
+    }
+
+    @org.testng.annotations.DataProvider(name = "groupProvisioningOperations")
+    public Object[][] groupProvisioningOperations() {
+
+        return new Object[][]{{ProvisioningOperation.POST}, {ProvisioningOperation.PUT}};
     }
 }

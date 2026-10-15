@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.provisioning.connector.scim2.test;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.testng.annotations.AfterMethod;
@@ -34,6 +36,7 @@ import org.wso2.carbon.identity.scim2.common.utils.SCIMCommonUtils;
 import org.wso2.charon3.core.attributes.Attribute;
 import org.wso2.charon3.core.attributes.ComplexAttribute;
 import org.wso2.charon3.core.attributes.SimpleAttribute;
+import org.wso2.charon3.core.encoder.JSONEncoder;
 import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.extensions.UserManager;
 import org.wso2.charon3.core.objects.User;
@@ -411,5 +414,34 @@ public class SCIM2ConnectorUtilTest {
 
         // Verify user is constructed.
         assertNotNull(result, "User should not be null");
+    }
+
+    @Test
+    public void testConstructUserFromAttributesPopulatesSchemas() throws Exception {
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put(SCIMConstants.UserSchemaConstants.USER_NAME, "john.doe");
+
+        IdentitySCIMManager scimManager = Mockito.mock(IdentitySCIMManager.class);
+        UserManager userManager = Mockito.mock(UserManager.class);
+        User user = new User();
+
+        identitySCIMManagerMock.when(IdentitySCIMManager::getInstance).thenReturn(scimManager);
+        Mockito.when(scimManager.getUserManager()).thenReturn(userManager);
+        attributeMapperMock.when(() -> AttributeMapper.constructSCIMObjectFromAttributes(
+                any(UserManager.class), any(Map.class), Mockito.anyInt())).thenReturn(user);
+
+        User result = SCIM2ConnectorUtil.constructUserFromAttributes(attributes);
+
+        assertTrue(result.getSchemaList().contains(SCIMConstants.USER_CORE_SCHEMA_URI),
+                "Constructed user should carry the SCIM core user schema URI");
+
+        // The encoded payload is what goes on the wire; an empty schemas array is rejected by SCIM targets.
+        String encoded = new JSONEncoder().encodeSCIMObject(result);
+        JSONObject encodedObject = new JSONObject(encoded);
+        JSONArray schemas = encodedObject.getJSONArray(SCIMConstants.CommonSchemaConstants.SCHEMAS);
+        assertTrue(schemas.length() > 0, "Encoded user payload should not carry an empty schemas array");
+        assertEquals(schemas.getString(0), SCIMConstants.USER_CORE_SCHEMA_URI,
+                "Encoded user payload should carry the SCIM core user schema URI");
     }
 }
