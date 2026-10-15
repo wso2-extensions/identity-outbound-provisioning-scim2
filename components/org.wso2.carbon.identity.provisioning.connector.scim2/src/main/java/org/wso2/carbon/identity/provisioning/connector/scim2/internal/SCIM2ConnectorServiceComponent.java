@@ -23,6 +23,10 @@ import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.wso2.carbon.identity.compatibility.settings.core.service.CompatibilitySettingsService;
 import org.wso2.carbon.identity.provisioning.AbstractProvisioningConnectorFactory;
 import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningConnectorFactory;
 import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIM2ClientConfigRegistrar;
@@ -56,5 +60,21 @@ public class SCIM2ConnectorServiceComponent {
         } catch (Throwable e) {
             log.error(" Error while activating SCIM2 Provisioning Connector ", e);
         }
+    }
+
+    @Reference(
+            name = "compatibility.settings.service",
+            service = CompatibilitySettingsService.class,
+            cardinality = ReferenceCardinality.OPTIONAL,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetCompatibilitySettingsService")
+    protected void setCompatibilitySettingsService(CompatibilitySettingsService compatibilitySettingsService) {
+
+        SCIM2ConnectorServiceDataHolder.getInstance().setCompatibilitySettingsService(compatibilitySettingsService);
+    }
+
+    protected void unsetCompatibilitySettingsService(CompatibilitySettingsService compatibilitySettingsService) {
+
+        SCIM2ConnectorServiceDataHolder.getInstance().setCompatibilitySettingsService(null);
     }
 }

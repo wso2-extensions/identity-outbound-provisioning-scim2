@@ -46,6 +46,9 @@ public class SCIM2ProvisioningConnectorConstants {
     public static final String DEFAULT_SCIM2_ENTERPRISE_DIALECT
             = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User";
 
+    public static final String OUTBOUND_PROVISIONING_COMPATIBILITY_SETTING_GROUP = "outboundProvisioning";
+    public static final String ENABLE_LEGACY_SCIM2_PAYLOAD = "enableLegacyScim2Payload";
+
     public static final String DEFAULT = "default";
     public static final String ATTRIBUTE_TYPE = ".type";
     public static final String ATTRIBUTE_VALUE = ".value";

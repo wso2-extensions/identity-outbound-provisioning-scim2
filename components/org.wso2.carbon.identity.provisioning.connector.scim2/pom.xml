@@ -100,6 +100,10 @@
             <artifactId>org.wso2.carbon.identity.central.log.mgt</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.compatibility.settings.core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jacoco</groupId>
             <artifactId>org.jacoco.agent</artifactId>
             <classifier>runtime</classifier>
@@ -187,6 +191,8 @@
                             version="${carbon.identity.framework.import.version.range}",
                             org.wso2.carbon.identity.core.*; version="${carbon.identity.framework.import.version.range}",
                             org.wso2.carbon.identity.central.log.mgt.utils; version="${carbon.identity.framework.import.version.range}",
+                            org.wso2.carbon.identity.compatibility.settings.core.*;
+                            version="${carbon.identity.framework.import.version.range}",
                             org.wso2.carbon.identity.scim2.common.impl;
                             version="${identity.inbound.provisioning.scim2.import.version.range}",
                             org.wso2.carbon.identity.scim2.common.utils;

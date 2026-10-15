@@ -27,6 +27,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
+import org.wso2.carbon.identity.compatibility.settings.core.model.CompatibilitySetting;
+import org.wso2.carbon.identity.compatibility.settings.core.model.CompatibilitySettingGroup;
+import org.wso2.carbon.identity.compatibility.settings.core.service.CompatibilitySettingsService;
+import org.wso2.carbon.identity.provisioning.connector.scim2.internal.SCIM2ConnectorServiceDataHolder;
 import org.wso2.carbon.identity.provisioning.IdentityProvisioningConstants;
 import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningConnectorConstants;
 import org.wso2.carbon.identity.provisioning.connector.scim2.util.SCIM2ConnectorUtil;
@@ -81,6 +85,7 @@ public class SCIM2ConnectorUtilTest {
         identitySCIMManagerMock = Mockito.mockStatic(IdentitySCIMManager.class);
         attributeMapperMock = Mockito.mockStatic(AttributeMapper.class);
         resourceSchemaManagerMock = Mockito.mockStatic(SCIMResourceSchemaManager.class);
+        setLegacyScim2Payload(false);
 
         // Every construction path resolves the tenant resource type schema; default it to core only and
         // let the tests that care about extensions override it.
@@ -108,6 +113,7 @@ public class SCIM2ConnectorUtilTest {
         if (resourceSchemaManagerMock != null) {
             resourceSchemaManagerMock.close();
         }
+        SCIM2ConnectorServiceDataHolder.getInstance().setCompatibilitySettingsService(null);
     }
 
     @Test
@@ -505,5 +511,61 @@ public class SCIM2ConnectorUtilTest {
                 any(UserManager.class), any(Map.class), Mockito.anyInt())).thenReturn(user);
 
         return SCIM2ConnectorUtil.constructUserFromAttributes(attributes);
+    }
+
+    @Test
+    public void testLegacyPayloadIsLeftUntouched() throws Exception {
+
+        setLegacyScim2Payload(true);
+
+        User user = new User();
+        user.getAttributeList().put(SCIMConstants.CommonSchemaConstants.META,
+                new ComplexAttribute(SCIMConstants.CommonSchemaConstants.META));
+        User result = constructUser(user, SCIMConstants.USER_CORE_SCHEMA_URI);
+
+        assertTrue(result.getSchemaList().isEmpty(),
+                "A tenant pinned to the legacy payload should keep the empty schemas array");
+        assertNotNull(result.getAttribute(SCIMConstants.CommonSchemaConstants.META),
+                "A tenant pinned to the legacy payload should keep meta");
+    }
+
+    @Test
+    public void testPayloadFallsBackToLegacyWithoutTheCompatibilityService() throws Exception {
+
+        // The service is unavailable, so the tenant must not be silently moved onto the new behaviour.
+        setLegacyScim2Payload(null);
+
+        User result = constructUser(new User(), SCIMConstants.USER_CORE_SCHEMA_URI);
+
+        assertTrue(result.getSchemaList().isEmpty(),
+                "An unavailable compatibility settings service should fail safe to the legacy payload");
+    }
+
+    /**
+     * Pins the tenant to the legacy or the corrected outbound payload, the way the compatibility
+     * setting does at runtime. Passing null leaves the service absent, which must fail safe to legacy.
+     */
+    static void setLegacyScim2Payload(Boolean legacy) {
+
+        if (legacy == null) {
+            SCIM2ConnectorServiceDataHolder.getInstance().setCompatibilitySettingsService(null);
+            return;
+        }
+        System.setProperty("carbon.home", System.getProperty("user.dir"));
+
+        CompatibilitySettingGroup group = new CompatibilitySettingGroup();
+        group.setSettingGroup(SCIM2ProvisioningConnectorConstants.OUTBOUND_PROVISIONING_COMPATIBILITY_SETTING_GROUP);
+        group.addSetting(SCIM2ProvisioningConnectorConstants.ENABLE_LEGACY_SCIM2_PAYLOAD, String.valueOf(legacy));
+        CompatibilitySetting setting = new CompatibilitySetting();
+        setting.addCompatibilitySetting(group);
+
+        CompatibilitySettingsService service = Mockito.mock(CompatibilitySettingsService.class);
+        try {
+            Mockito.when(service.getCompatibilitySettingsByGroupAndSetting(
+                    Mockito.nullable(String.class), Mockito.anyString(), Mockito.anyString())).thenReturn(setting);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        SCIM2ConnectorServiceDataHolder.getInstance().setCompatibilitySettingsService(service);
     }
 }
