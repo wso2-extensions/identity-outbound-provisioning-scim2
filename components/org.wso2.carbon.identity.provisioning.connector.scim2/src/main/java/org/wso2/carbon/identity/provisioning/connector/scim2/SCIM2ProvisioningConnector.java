@@ -298,6 +298,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                 user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
             } else {
                 user = new User();
+                user.setSchemas();
             }
 
             user.setUserName(userName);
@@ -363,6 +364,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                 user = SCIM2ConnectorUtil.constructUserFromAttributes(singleValued);
             } else {
                 user = new User();
+                user.setSchemas();
             }
 
             if (shouldUsePatch) {
@@ -410,6 +412,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
                 groupName = groupNames.get(0);
             }
             Group group = new Group();
+            group.setSchemas();
             group.setDisplayName(groupName);
             List<String> userList = getUserNames(groupEntity.getAttributes());
             setGroupMembers(group, userList);
@@ -467,6 +470,7 @@ public class SCIM2ProvisioningConnector extends AbstractOutboundProvisioningConn
             }
 
             Group group = new Group();
+            group.setSchemas();
             group.setDisplayName(groupName);
             List<String> userList = getUserNames(groupEntity.getAttributes());
             setGroupMembers(group, userList);

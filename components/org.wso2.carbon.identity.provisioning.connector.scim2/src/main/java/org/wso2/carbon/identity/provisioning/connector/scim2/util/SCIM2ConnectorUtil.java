@@ -39,6 +39,7 @@ import org.wso2.charon3.core.encoder.JSONEncoder;
 import org.wso2.charon3.core.exceptions.BadRequestException;
 import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.exceptions.NotFoundException;
+import org.wso2.charon3.core.exceptions.NotImplementedException;
 import org.wso2.charon3.core.extensions.UserManager;
 import org.wso2.charon3.core.objects.User;
 import org.wso2.charon3.core.schema.AttributeSchema;
@@ -323,6 +324,14 @@ public class SCIM2ConnectorUtil {
         UserManager userManager = IdentitySCIMManager.getInstance().getUserManager();
         User user = (User) AttributeMapper.constructSCIMObjectFromAttributes(userManager, attributes,
                 SCIM2CommonConstants.USER);
+        // The schemas attribute is REQUIRED by the SCIM 2.0 specification and is not populated by the
+        // attribute mapper, so resolve it from the resource type schema of the tenant.
+        try {
+            user.setSchemas(userManager);
+        } catch (NotImplementedException e) {
+            throw new CharonException("Error while resolving the user schema for the outbound " +
+                    "provisioning payload.", e);
+        }
         if (isScimCompliantEmailAttributeEnabled()) {
             ensureScimCompliantEmailAttribute(user);
         }
