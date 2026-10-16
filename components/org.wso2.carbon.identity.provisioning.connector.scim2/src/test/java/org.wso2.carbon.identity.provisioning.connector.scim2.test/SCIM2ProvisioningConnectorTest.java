@@ -29,6 +29,10 @@ import org.testng.annotations.Test;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
+import org.wso2.carbon.identity.compatibility.settings.core.model.CompatibilitySetting;
+import org.wso2.carbon.identity.compatibility.settings.core.model.CompatibilitySettingGroup;
+import org.wso2.carbon.identity.compatibility.settings.core.service.CompatibilitySettingsService;
+import org.wso2.carbon.identity.provisioning.connector.scim2.internal.SCIM2ConnectorServiceDataHolder;
 import org.wso2.carbon.identity.provisioning.IdentityProvisioningConstants;
 import org.wso2.carbon.identity.provisioning.ProvisioningEntity;
 import org.wso2.carbon.identity.provisioning.ProvisioningEntityType;
@@ -67,12 +71,16 @@ public class SCIM2ProvisioningConnectorTest {
     @BeforeMethod
     public void setUp() throws Exception {
 
+        SCIM2ConnectorUtilTest.setLegacyScim2Payload(false);
+
         sCIM2ProvisioningConnector = new SCIM2ProvisioningConnector();
         scimProvider = Mockito.mock(SCIMProvider.class);
     }
 
     @AfterMethod
     public void tearDown() throws Exception {
+
+        SCIM2ConnectorServiceDataHolder.getInstance().setCompatibilitySettingsService(null);
 
     }
 
@@ -807,5 +815,32 @@ public class SCIM2ProvisioningConnectorTest {
     public Object[][] groupProvisioningOperations() {
 
         return new Object[][]{{ProvisioningOperation.POST}, {ProvisioningOperation.PUT}};
+    }
+
+    @Test
+    public void testLegacyGroupPayloadKeepsTheEmptySchemasArray() throws Exception {
+
+        SCIM2ConnectorUtilTest.setLegacyScim2Payload(true);
+
+        List<Group> provisionedGroups = new ArrayList<>();
+        try (MockedConstruction<ProvisioningClient> mocked = Mockito.mockConstruction(ProvisioningClient.class,
+                (mock, context) -> provisionedGroups.add((Group) context.arguments().get(1)))) {
+            sCIM2ProvisioningConnector.init(new Property[0]);
+            Map<ClaimMapping, List<String>> attributes = new HashMap<>();
+            List<String> value = new ArrayList<>();
+            value.add("testGroup");
+            attributes.put(ClaimMapping.build(IdentityProvisioningConstants.GROUP_CLAIM_URI, null, null,
+                    false), value);
+            ProvisioningEntity groupEntity = new ProvisioningEntity(ProvisioningEntityType.GROUP,
+                    ProvisioningOperation.POST, attributes);
+            Method method = SCIM2ProvisioningConnector.class.getDeclaredMethod("createGroup",
+                    ProvisioningEntity.class);
+            method.setAccessible(true);
+            method.invoke(sCIM2ProvisioningConnector, groupEntity);
+        }
+
+        assertFalse(provisionedGroups.isEmpty(), "A group should have been handed to the provisioning client");
+        assertTrue(provisionedGroups.get(0).getSchemaList().isEmpty(),
+                "A tenant pinned to the legacy payload should keep the empty schemas array for groups");
     }
 }

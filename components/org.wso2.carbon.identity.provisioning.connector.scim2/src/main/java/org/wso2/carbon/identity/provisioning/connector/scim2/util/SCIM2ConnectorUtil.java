@@ -23,9 +23,15 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
+import org.wso2.carbon.identity.compatibility.settings.core.exception.CompatibilitySettingException;
+import org.wso2.carbon.identity.compatibility.settings.core.model.CompatibilitySetting;
+import org.wso2.carbon.identity.compatibility.settings.core.model.CompatibilitySettingGroup;
+import org.wso2.carbon.identity.compatibility.settings.core.service.CompatibilitySettingsService;
+import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.provisioning.IdentityProvisioningConstants;
 import org.wso2.carbon.identity.provisioning.connector.scim2.SCIM2ProvisioningConnectorConstants;
+import org.wso2.carbon.identity.provisioning.connector.scim2.internal.SCIM2ConnectorServiceDataHolder;
 import org.wso2.carbon.identity.scim2.common.impl.IdentitySCIMManager;
 import org.wso2.carbon.identity.scim2.common.utils.AttributeMapper;
 import org.wso2.carbon.identity.scim2.common.utils.SCIMCommonUtils;
@@ -44,6 +50,8 @@ import org.wso2.charon3.core.extensions.UserManager;
 import org.wso2.charon3.core.objects.User;
 import org.wso2.charon3.core.schema.AttributeSchema;
 import org.wso2.charon3.core.schema.SCIMConstants;
+import org.wso2.charon3.core.schema.SCIMResourceSchemaManager;
+import org.wso2.charon3.core.schema.SCIMResourceTypeSchema;
 import org.wso2.charon3.core.schema.SCIMSchemaDefinitions;
 import org.wso2.charon3.core.utils.codeutils.PatchOperation;
 
@@ -324,18 +332,93 @@ public class SCIM2ConnectorUtil {
         UserManager userManager = IdentitySCIMManager.getInstance().getUserManager();
         User user = (User) AttributeMapper.constructSCIMObjectFromAttributes(userManager, attributes,
                 SCIM2CommonConstants.USER);
-        // The schemas attribute is REQUIRED by the SCIM 2.0 specification and is not populated by the
-        // attribute mapper, so resolve it from the resource type schema of the tenant.
-        try {
-            user.setSchemas(userManager);
-        } catch (NotImplementedException e) {
-            throw new CharonException("Error while resolving the user schema for the outbound " +
-                    "provisioning payload.", e);
+        if (!isLegacyScim2PayloadEnabled()) {
+            // meta is read-only per the SCIM 2.0 specification and its values describe the resource on this
+            // server, so it is meaningless at the provisioning target.
+            user.deleteAttribute(SCIMConstants.CommonSchemaConstants.META);
+            setSchemasPresentInPayload(user, userManager);
         }
         if (isScimCompliantEmailAttributeEnabled()) {
             ensureScimCompliantEmailAttribute(user);
         }
         return user;
+    }
+
+    /**
+     * Returns whether the tenant is pinned to the legacy SCIM2 outbound payload.
+     *
+     * <p>Correcting the payload changes what provisioning targets receive, so the change is gated on the
+     * outbound provisioning compatibility setting. Organizations created before the setting's cut-off keep
+     * the payload they were provisioning with, and opt in per tenant.</p>
+     *
+     * <p>Every uncertainty resolves to the legacy payload, so a tenant is never silently moved onto the new
+     * behaviour because a lookup failed.</p>
+     *
+     * @return true if the legacy payload should be sent.
+     */
+    public static boolean isLegacyScim2PayloadEnabled() {
+
+        CompatibilitySettingsService compatibilitySettingsService =
+                SCIM2ConnectorServiceDataHolder.getInstance().getCompatibilitySettingsService();
+        if (compatibilitySettingsService == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("Compatibility settings service is not available. Using the legacy SCIM2 outbound " +
+                        "provisioning payload.");
+            }
+            return true;
+        }
+        String tenantDomain = IdentityTenantUtil.resolveTenantDomain();
+        try {
+            CompatibilitySetting setting = compatibilitySettingsService.getCompatibilitySettingsByGroupAndSetting(
+                    tenantDomain, SCIM2ProvisioningConnectorConstants.OUTBOUND_PROVISIONING_COMPATIBILITY_SETTING_GROUP,
+                    SCIM2ProvisioningConnectorConstants.ENABLE_LEGACY_SCIM2_PAYLOAD);
+            CompatibilitySettingGroup group = setting == null ? null : setting.getCompatibilitySetting(
+                    SCIM2ProvisioningConnectorConstants.OUTBOUND_PROVISIONING_COMPATIBILITY_SETTING_GROUP);
+            String value = group == null ? null : group.getSettingValue(
+                    SCIM2ProvisioningConnectorConstants.ENABLE_LEGACY_SCIM2_PAYLOAD);
+            if (StringUtils.isBlank(value)) {
+                return true;
+            }
+            return Boolean.parseBoolean(value);
+        } catch (CompatibilitySettingException e) {
+            log.error("Error while reading the compatibility setting: " +
+                    SCIM2ProvisioningConnectorConstants.ENABLE_LEGACY_SCIM2_PAYLOAD + " for tenant: " +
+                    tenantDomain + ". Using the legacy SCIM2 outbound provisioning payload.", e);
+            return true;
+        }
+    }
+
+    /**
+     * Declares the schemas the given user payload actually uses.
+     *
+     * <p>The attribute mapper leaves the schema list empty, and copying the whole resource type schema
+     * would advertise extensions the payload carries no attribute from. The SCIM 2.0 specification
+     * defines schemas as the URIs used in the resource, and a strict target rejects a URI it does not
+     * recognise, so only the core schema and the extensions actually present are declared.</p>
+     *
+     * @param user        The user to set the schemas on.
+     * @param userManager User manager used to resolve the tenant's resource type schema.
+     * @throws CharonException     If the resource type schema cannot be resolved.
+     * @throws BadRequestException If the resource type schema is invalid.
+     */
+    private static void setSchemasPresentInPayload(User user, UserManager userManager)
+            throws CharonException, BadRequestException {
+
+        user.setSchema(SCIMConstants.USER_CORE_SCHEMA_URI);
+
+        SCIMResourceTypeSchema resourceTypeSchema;
+        try {
+            resourceTypeSchema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema(userManager);
+        } catch (NotImplementedException e) {
+            throw new CharonException("Error while resolving the user schema for the outbound " +
+                    "provisioning payload.", e);
+        }
+
+        for (String schemaUri : resourceTypeSchema.getSchemasList()) {
+            if (!SCIMConstants.USER_CORE_SCHEMA_URI.equals(schemaUri) && user.getAttribute(schemaUri) != null) {
+                user.setSchema(schemaUri);
+            }
+        }
     }
 
     /**
