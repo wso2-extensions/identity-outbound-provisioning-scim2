@@ -41,6 +41,12 @@ public class SCIM2ProvisioningConnectorConstants {
     public static final String SCIM2_API_KEY_HEADER = "scim2-api-key-header";
     public static final String SCIM2_API_KEY_VALUE = "scim2-api-key-value";
 
+    // OAuth 2.0 Client Credentials authentication constants.
+    public static final String SCIM2_OAUTH_TOKEN_ENDPOINT = "scim2-oauth-token-endpoint";
+    public static final String SCIM2_OAUTH_CLIENT_ID = "scim2-oauth-client-id";
+    public static final String SCIM2_OAUTH_CLIENT_SECRET = "scim2-oauth-client-secret";
+    public static final String SCIM2_OAUTH_SCOPE = "scim2-oauth-scope";
+
     public static final String DEFAULT_SCIM2_CORE_DIALECT = "urn:ietf:params:scim:schemas:core:2.0";
     public static final String DEFAULT_SCIM2_USER_DIALECT = "urn:ietf:params:scim:schemas:core:2.0:User";
     public static final String DEFAULT_SCIM2_ENTERPRISE_DIALECT
